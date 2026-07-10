@@ -1,0 +1,3 @@
+.build/
+local.settings.json
+__pycache__/

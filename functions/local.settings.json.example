@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "SQL_SERVER": "myserver.database.windows.net",
+    "SQL_DATABASE": "condb",
+    "SNAPSHOT_CONTAINER": "index-snapshots",
+    "REPORT_CONTAINER": "weekly-reports",
+    "SWEEP_CRON": "0 0 6 * * *",
+    "STORAGE_CONNECTION": "UseDevelopmentStorage=true"
+  }
+}
