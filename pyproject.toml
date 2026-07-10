@@ -28,7 +28,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["common", "ingest", "api"]
+packages = ["common", "ingest", "api", "schema"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
