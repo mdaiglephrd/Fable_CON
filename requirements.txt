@@ -1,0 +1,14 @@
+# Runtime dependencies for the whole repo. functions/ has its own
+# deployment-scoped requirements.txt (keep consistent); the API's App Service
+# zip deploy builds from this file.
+pyodbc>=5.0
+pdfplumber>=0.11
+fastapi>=0.110
+uvicorn[standard]>=0.29
+gunicorn>=21.2
+pydantic>=2.6
+azure-identity>=1.16
+azure-storage-blob>=12.19
+azure-search-documents>=11.4
+azure-functions>=1.18
+openai>=1.30

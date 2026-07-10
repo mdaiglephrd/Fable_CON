@@ -1,0 +1,7 @@
+# Deployment-scoped requirements for the Functions app only.
+# Keep versions consistent with the repo-root requirements.txt.
+azure-functions>=1.18
+azure-storage-blob>=12.19
+azure-identity>=1.16
+pyodbc>=5.0
+pdfplumber>=0.11

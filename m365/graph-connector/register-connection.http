@@ -1,0 +1,130 @@
+# register-connection.http — raw Microsoft Graph REST calls for Path B
+# (custom Copilot/Graph connector for the CON database).
+#
+# Paste-in targets:
+#   * Graph Explorer (https://developer.microsoft.com/graph/graph-explorer):
+#     paste method+URL and the JSON body per call. Sign in as an admin and
+#     consent to ExternalConnection.ReadWrite.OwnedBy / ExternalItem.ReadWrite.OwnedBy.
+#     (Graph Explorer runs delegated; production pushers should use app-only
+#     client-credentials tokens from your registered app.)
+#   * VS Code "REST Client" extension: this file's ### blocks run as-is after
+#     you replace {{token}}.
+#
+# Order matters: 1) connection  2) schema (async!)  3) items.
+
+### 1) Create the external connection
+POST https://graph.microsoft.com/v1.0/external/connections
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id": "gaconrecords",
+  "name": "GA CON Records",
+  "description": "Georgia DCH Certificate of Need matters and documents from the CON research database. One item per document (Laserfiche entry), carrying its matter's metadata and the DocView link."
+}
+
+# Expect: 201 Created. The connection starts in `draft` state.
+
+
+### 2) Register the schema (LONG-RUNNING)
+# Body = the full contents of schema.json (inlined here for paste-in).
+# Expect: 202 Accepted + a Location header like
+#   https://graph.microsoft.com/v1.0/external/connections/gaconrecords/operations/{id}
+# Poll it (call 2b) until status = "completed" — only then is the connection
+# `ready` for items. Provisioning can take several minutes.
+PATCH https://graph.microsoft.com/v1.0/external/connections/gaconrecords/schema
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "baseType": "microsoft.graph.externalItem",
+  "properties": [
+    { "name": "title", "type": "String", "isSearchable": true, "isQueryable": true, "isRetrievable": true, "isRefinable": false, "labels": ["title"] },
+    { "name": "docviewUrl", "type": "String", "isSearchable": false, "isQueryable": false, "isRetrievable": true, "isRefinable": false, "labels": ["url"] },
+    { "name": "updatedAt", "type": "DateTime", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": false, "labels": ["lastModifiedDateTime"] },
+    { "name": "entryId", "type": "Int64", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": false },
+    { "name": "docketId", "type": "String", "isSearchable": true, "isQueryable": true, "isRetrievable": true, "isRefinable": false, "aliases": ["docket"] },
+    { "name": "fileName", "type": "String", "isSearchable": true, "isQueryable": true, "isRetrievable": true, "isRefinable": false },
+    { "name": "applicant", "type": "String", "isSearchable": true, "isQueryable": true, "isRetrievable": true, "isRefinable": false },
+    { "name": "facility", "type": "String", "isSearchable": true, "isQueryable": true, "isRetrievable": true, "isRefinable": false },
+    { "name": "decisionMaker", "type": "String", "isSearchable": true, "isQueryable": true, "isRetrievable": true, "isRefinable": false },
+    { "name": "serviceArea", "type": "String", "isSearchable": true, "isQueryable": false, "isRetrievable": true, "isRefinable": false },
+    { "name": "docType", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "phase", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "outcome", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "matterType", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "actionType", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "county", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "finalOutcome", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "validationStatus", "type": "String", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "yearFiled", "type": "Int64", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "docDate", "type": "DateTime", "isSearchable": false, "isQueryable": true, "isRetrievable": true, "isRefinable": true },
+    { "name": "serviceTypes", "type": "StringCollection", "isSearchable": true, "isQueryable": true, "isRetrievable": true, "isRefinable": false }
+  ]
+}
+
+
+### 2b) Poll schema provisioning (replace {operationId} from the Location header)
+GET https://graph.microsoft.com/v1.0/external/connections/gaconrecords/operations/{operationId}
+Authorization: Bearer {{token}}
+
+# Expect: {"status": "inprogress"} then eventually {"status": "completed"}.
+
+
+### 3) Sample item PUT — document entry_id 123456 (item id = entry_id)
+# properties keys MUST match schema names. DateTime values: ISO 8601.
+# Collections need the @odata.type specifier. `content` is what full-text
+# search and Copilot read as the item body — feed it OCR text or a composed
+# summary from the API (GET /documents/123456 + GET /matters/{docket_id}).
+# acl: public-record data, grant to everyone in the tenant.
+PUT https://graph.microsoft.com/v1.0/external/connections/gaconrecords/items/123456
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "acl": [
+    {
+      "type": "everyone",
+      "value": "everyone",
+      "accessType": "grant"
+    }
+  ],
+  "properties": {
+    "title": "CON-1234567: Hearing Officer Decision - Example Medical Center",
+    "docviewUrl": "https://dch-example.laserfiche.example/DocView.aspx?id=123456",
+    "updatedAt": "2026-07-01T14:03:22Z",
+    "entryId": 123456,
+    "docketId": "CON-1234567",
+    "fileName": "CON-1234567 Hearing Officer Decision.pdf",
+    "applicant": "Example Medical Center, Inc.",
+    "facility": "Example Medical Center",
+    "decisionMaker": "Hearing Officer J. Doe",
+    "serviceArea": "Fulton and contiguous counties",
+    "docType": "Hearing Officer Decision",
+    "phase": "Administrative Appeal",
+    "outcome": "Affirmed (appeal)",
+    "matterType": "CON Application",
+    "actionType": "Bed or capacity addition",
+    "county": "Fulton",
+    "finalOutcome": "Approved with conditions",
+    "validationStatus": "Validated",
+    "yearFiled": 2024,
+    "docDate": "2025-03-14T00:00:00Z",
+    "serviceTypes@odata.type": "Collection(String)",
+    "serviceTypes": [
+      "Acute-care/general hospital beds",
+      "NICU/perinatal"
+    ]
+  },
+  "content": {
+    "type": "text",
+    "value": "Hearing Officer Decision in CON-1234567, Example Medical Center application for 24 additional acute-care beds in Fulton County. Decision: affirmed with conditions... (compose from OCR text or API fields)"
+  }
+}
+
+# Expect: 200 OK. Re-PUT the same id to update; DELETE the same URL to remove.
+
+
+### 4) (Optional) Verify the item
+GET https://graph.microsoft.com/v1.0/external/connections/gaconrecords/items/123456
+Authorization: Bearer {{token}}
