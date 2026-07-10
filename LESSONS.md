@@ -1,0 +1,24 @@
+# LESSONS
+
+One lesson per entry: a one-line summary, then why it mattered. Update entries
+in place rather than adding duplicates.
+
+- **GA-####### is treated as a legacy variant of CON-####### — an assumption, not a fact.**
+  The spec says legacy `GA-#######` ids are "embedded in names" and the digit count
+  matches CON numbering, so `common/docket.py` canonicalizes GA→CON (constant
+  `GA_MAPS_TO_CON`). If real data shows GA numbers are a separate space, flip the
+  constant and re-run the tag load; matters keyed wrongly would need re-keying.
+
+- **All cross-module names live in DESIGN.md; modules were built against it, not each other.**
+  Parallel construction of schema/ingest/api/functions only stayed consistent because
+  table names, env var names, and function signatures were fixed in one file first.
+
+- **Snapshot diffs hold only the OLD snapshot in memory and stream the NEW one.**
+  The full repository index is ~1M+ rows; two full dicts would approach the memory
+  ceiling of a consumption-plan Azure Function. One dict + streaming halves it.
+
+- **The weekly-report parser is built against a synthetic fixture until the real PDF arrives.**
+  Layout assumptions (section headers, label names) are isolated in regex tables at the
+  top of `ingest/weekly_report_parser.py` so re-tuning against the real DCH report is a
+  table edit, not a rewrite. Same for the tag export: column names are assumed to match
+  DESIGN.md field names until a real export is provided.
