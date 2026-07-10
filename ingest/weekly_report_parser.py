@@ -355,7 +355,7 @@ def _strip_docket_text(text: str) -> str:
     """Remove docket substrings from a prose fragment; return what remains."""
     for dm in extract_dockets(text):
         text = text.replace(dm.raw, " ")
-    return " ".join(text.replace("-", " ").split()) if not text.strip(" \t-–—") else " ".join(text.split())
+    return " ".join(text.split())
 
 
 def _parse_entry(section: str, entry_lines: list[str], warn) -> ReportEvent:

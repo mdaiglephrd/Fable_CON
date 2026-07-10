@@ -1,0 +1,203 @@
+// ============================================================================
+// DAX measures for the CON semantic model.
+// Paste each measure separately: Modeling > New measure, then paste one
+// definition (everything from the name through the end of its expression).
+// Table names assume the queries.pq names: Matters, Documents, WeeklyEvents,
+// ChangeLog, MatterServiceTypes, Dates.
+// Outcome strings are the exact codes from con.vocab_outcome / common/vocab.py.
+// ============================================================================
+
+
+// ------------------------------- Core counts -------------------------------
+
+// All matters in the current filter context.
+Total Matters = COUNTROWS ( Matters )
+
+// All documents in the current filter context.
+Total Documents = COUNTROWS ( Documents )
+
+// Matters whose final_outcome is any of the three approval outcomes.
+Matters Approved =
+CALCULATE (
+    COUNTROWS ( Matters ),
+    Matters[final_outcome]
+        IN { "Approved", "Approved with conditions", "Partially approved" }
+)
+
+// "Decided" matters: final_outcome is populated AND is not one of the
+// non-decision states. Per the project definition, decided EXCLUDES
+// Pending, Unknown, and Withdrawn (a withdrawal is not an agency decision).
+// Everything else in con.vocab_outcome counts as decided: the three approval
+// outcomes, Denied, Dismissed, Remanded, Settled, and the appellate outcomes
+// (Affirmed/Reversed/Vacated).
+Decided Matters =
+CALCULATE (
+    COUNTROWS ( Matters ),
+    NOT ISBLANK ( Matters[final_outcome] ),
+    NOT Matters[final_outcome] IN { "Pending", "Unknown", "Withdrawn" }
+)
+
+// Approval rate = approvals / decided. BLANK (not 0) when nothing is decided
+// in context, so empty counties/years show blank rather than 0%.
+// Format as percentage (Measure tools > % > 1 decimal).
+Approval Rate % =
+DIVIDE ( [Matters Approved], [Decided Matters] )
+
+// Average documents per matter in context. Uses matters that exist in the
+// Documents table's context; a matter with zero documents still counts in the
+// denominator because the denominator is the Matters table.
+Documents per Matter =
+DIVIDE ( [Total Documents], [Total Matters] )
+
+
+// --------------------- Timing: LOI -> Decision (median) ---------------------
+
+// Median calendar days from a matter's first LETTER_OF_INTENT weekly-report
+// event to its final_decision_date.
+//
+// LIMITS — read before trusting this number:
+//  * Only matters that (a) appear in at least one weekly report LOI section
+//    WITH a resolvable docket (weekly_report_event.docket_id is NULL when the
+//    printed entry had no docket) and (b) have matter.final_decision_date
+//    populated contribute. Everything else is silently excluded.
+//  * Weekly reports only exist for the period you have ingested them, so
+//    older matters will rarely have an LOI event.
+//  * report_date is the date of the report listing the LOI, not the LOI's own
+//    filing date — treat the result as accurate to ~1 week.
+Median Days LOI to Decision =
+MEDIANX (
+    FILTER (
+        ADDCOLUMNS (
+            VALUES ( Matters[docket_id] ),
+            "@LOIDate",
+                CALCULATE (
+                    MIN ( WeeklyEvents[report_date] ),
+                    WeeklyEvents[section] = "LETTER_OF_INTENT"
+                ),
+            "@DecisionDate",
+                CALCULATE ( MIN ( Matters[final_decision_date] ) )
+        ),
+        NOT ISBLANK ( [@LOIDate] )
+            && NOT ISBLANK ( [@DecisionDate] )
+            && [@DecisionDate] >= [@LOIDate]
+    ),
+    DATEDIFF ( [@LOIDate], [@DecisionDate], DAY )
+)
+
+// How many matters actually contribute to the median above — always show this
+// next to the median so readers know the sample size.
+LOI to Decision Sample Size =
+COUNTROWS (
+    FILTER (
+        ADDCOLUMNS (
+            VALUES ( Matters[docket_id] ),
+            "@LOIDate",
+                CALCULATE (
+                    MIN ( WeeklyEvents[report_date] ),
+                    WeeklyEvents[section] = "LETTER_OF_INTENT"
+                ),
+            "@DecisionDate",
+                CALCULATE ( MIN ( Matters[final_decision_date] ) )
+        ),
+        NOT ISBLANK ( [@LOIDate] )
+            && NOT ISBLANK ( [@DecisionDate] )
+            && [@DecisionDate] >= [@LOIDate]
+    )
+)
+
+
+// ------------------- Slicing patterns (Year / County / Service Type) -------------------
+
+// Matters by YEAR: no dedicated measure needed — put Matters[year_filed] on the
+// axis with [Total Matters]. For a fixed-year card, the pattern is:
+Matters Filed 2024 =
+CALCULATE ( [Total Matters], Matters[year_filed] = 2024 )
+
+// Matters by COUNTY: put Matters[county] on a map/bar axis with [Total Matters]
+// (set county's Data category to "County", see report-layout.md). Pattern for a
+// single county card:
+Matters in Fulton =
+CALCULATE ( [Total Matters], Matters[county] = "Fulton" )
+
+// Matters by SERVICE TYPE: slice with MatterServiceTypes[service_type].
+// If the MatterServiceTypes->Matters relationship is single-direction, use this
+// measure so the service-type slicer reaches Matters; if you set the
+// relationship cross-filter to Both, plain [Total Matters] works and this
+// measure is unnecessary. NOTE: a matter with two service types appears under
+// both — column totals can exceed [Total Matters]; that is correct for a
+// multi-valued attribute.
+Matters (by Service Type) =
+CALCULATE (
+    [Total Matters],
+    CROSSFILTER ( MatterServiceTypes[docket_id], Matters[docket_id], BOTH )
+)
+
+// Approval rate sliced by service type (same CROSSFILTER treatment).
+Approval Rate % (by Service Type) =
+CALCULATE (
+    [Approval Rate %],
+    CROSSFILTER ( MatterServiceTypes[docket_id], Matters[docket_id], BOTH )
+)
+
+
+// --------------------------- Completeness audit ----------------------------
+
+// % of documents with validation_status = 'Validated'.
+// (Statuses are exactly: Unvalidated, Validated, Corrected, Rejected.)
+Documents Validated % =
+DIVIDE (
+    CALCULATE ( COUNTROWS ( Documents ), Documents[validation_status] = "Validated" ),
+    COUNTROWS ( Documents )
+)
+
+// Documents still awaiting review.
+Unvalidated Documents =
+CALCULATE ( COUNTROWS ( Documents ), Documents[validation_status] = "Unvalidated" )
+
+// Documents rejected during validation.
+Rejected Documents =
+CALCULATE ( COUNTROWS ( Documents ), Documents[validation_status] = "Rejected" )
+
+// Documents whose metadata was corrected during validation.
+Corrected Documents =
+CALCULATE ( COUNTROWS ( Documents ), Documents[validation_status] = "Corrected" )
+
+// Matters with no final_outcome recorded (NULL in con.matter.final_outcome).
+// Distinct from "Pending"/"Unknown", which are populated vocabulary values:
+// blank means nobody has coded the field yet.
+Matters Missing Final Outcome =
+COUNTROWS ( FILTER ( Matters, ISBLANK ( Matters[final_outcome] ) ) )
+
+// Matters with no county recorded.
+Matters Missing County =
+COUNTROWS ( FILTER ( Matters, ISBLANK ( Matters[county] ) ) )
+
+// Matters whose completeness_flags JSON array is non-empty (flag derived in
+// the Matters query as has_completeness_flags).
+Matters With Completeness Flags =
+CALCULATE ( COUNTROWS ( Matters ), Matters[has_completeness_flags] = 1 )
+
+// Stub matters auto-created by the weekly-report loader
+// (completeness_flags contains 'stub_from_weekly_report'; derived in queries.pq
+// as is_stub). These have a docket_id but little or no other metadata.
+Stub Matters =
+CALCULATE ( COUNTROWS ( Matters ), Matters[is_stub] = 1 )
+
+// Convenience: share of matters carrying any completeness flag.
+Matters Flagged % =
+DIVIDE ( [Matters With Completeness Flags], [Total Matters] )
+
+
+// ------------------------------ Change activity ----------------------------
+
+// Repository changes detected (rows in con.change_log) — relate detected_date
+// to Dates for trending.
+Changes Detected = COUNTROWS ( ChangeLog )
+
+// Changes that touched in-scope documents (entry_id exists in con.document).
+In-Scope Changes =
+CALCULATE ( COUNTROWS ( ChangeLog ), ChangeLog[in_scope] = TRUE () )
+
+// Changes that forced a document back to Unvalidated.
+Revalidations Flagged =
+CALCULATE ( COUNTROWS ( ChangeLog ), ChangeLog[revalidation_flagged] = TRUE () )
