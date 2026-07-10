@@ -96,10 +96,10 @@ SELECT
     m.year_filed                                      AS yearFiled,
     m.final_outcome                                   AS finalOutcome,
     st.service_types                                  AS serviceTypes,
-    CASE WHEN d.updated_at >= m.updated_at
+    CASE WHEN m.updated_at IS NULL OR d.updated_at >= m.updated_at
          THEN d.updated_at ELSE m.updated_at END      AS updatedAt
 FROM con.document AS d
-JOIN con.matter  AS m ON m.docket_id = d.docket_id
+LEFT JOIN con.matter AS m ON m.docket_id = d.docket_id
 OUTER APPLY (
     SELECT STRING_AGG(mst.service_type, N'; ')
                WITHIN GROUP (ORDER BY mst.service_type) AS service_types
@@ -108,9 +108,11 @@ OUTER APPLY (
 ) AS st;
 ```
 
-(Matters with zero documents aren't in the view; they're still reachable through
-the API/Power BI. If you want them searchable too, that is Path B territory or a
-second connection over a matter-level view.)
+(The LEFT JOIN keeps documents whose docket_id is NULL — they index with blank
+matter fields rather than dropping out silently. Matters with zero documents
+aren't in the view; they're still reachable through the API/Power BI. If you
+want them searchable too, that is Path B territory or a second connection over
+a matter-level view.)
 
 ### Step 1 — Entra app registration (for the connector's DB access)
 
