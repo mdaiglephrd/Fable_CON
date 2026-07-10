@@ -1,7 +1,6 @@
 // StorageV2 account (LRS, TLS 1.2, no public blob access) + ingestion containers.
 
 @description('Storage account name (3-24 chars, lowercase alphanumeric, globally unique).')
-@minLength(3)
 @maxLength(24)
 param storageAccountName string
 
