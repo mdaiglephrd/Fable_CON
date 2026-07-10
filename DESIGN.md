@@ -317,7 +317,10 @@ AZURE_OPENAI_ENDPOINT
 AZURE_OPENAI_API_KEY    # optional; AAD when absent
 AZURE_OPENAI_CHAT_DEPLOYMENT=gpt-4o-mini
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-small
-KEY_VAULT_URI           # optional; when set, missing secrets are read from Key Vault
+AZURE_OPENAI_API_VERSION # optional; api/search_client.py supplies the default
+KEY_VAULT_URI           # informational only — code never reads Key Vault directly.
+                        # Secrets reach the apps as env vars via App Settings
+                        # @Microsoft.KeyVault(SecretUri=...) references.
 ```
 
 ## Conventions

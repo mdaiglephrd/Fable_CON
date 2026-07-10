@@ -64,7 +64,7 @@ uvicorn api.main:app --reload    # query/search API on :8000
    managed identities, Key Vault secrets, migrations, code deploy).
 2. **Ingestion**: drop tag exports / index snapshots / weekly report PDFs into the
    Storage containers; the Functions app ingests them (see `docs/03-ingestion-runbook.md`).
-3. **Microsoft 365**: `docs/04-m365-integration-walkthrough.md` + `m365/*/README.md` —
+3. **Microsoft 365**: `docs/04-m365-walkthrough.md` + `m365/*/README.md` —
    Power BI report, Power App, Graph connector into Microsoft Search/Copilot, Copilot
    Studio agent, Purview governance. Everything is tailored to what an E7 subscription
    already includes.
