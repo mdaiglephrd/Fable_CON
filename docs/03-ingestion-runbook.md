@@ -93,23 +93,38 @@ Text-based PDF organized in lifecycle sections. The parser recognizes these
 section headers (case-insensitive, tolerant of numbering prefixes/trailing
 colons) and maps them to `con.weekly_report_event.section` codes:
 
-| Header seen in the PDF | Section code |
+| Heading seen in the real PDF | Section code |
 |---|---|
-| Letters of Intent [Received/Filed] | `LETTER_OF_INTENT` |
-| New Applications [Received/Filed] / Applications Received | `NEW_APPLICATION` |
-| Withdrawn [Applications/Projects] | `WITHDRAWN_APPLICATION` |
-| Pending Applications [Under Review] | `PENDING_APPLICATION` |
-| [Recently] Approved [Applications/Projects] | `APPROVED` |
-| [Recently] Denied [Applications/Projects] | `DENIED` |
-| Appealed [Projects/Applications] | `APPEALED` |
-| Letters of Determination [Issued] | `LETTER_OF_DETERMINATION` |
+| Letters of Intent / Letters of Intent – Batching | `LETTER_OF_INTENT` |
+| Expired Letters of Intent | `LOI_EXPIRED` |
+| New CON Applications | `NEW_APPLICATION` |
+| Withdrawn CON Applications | `WITHDRAWN_APPLICATION` |
+| Pending Review Applications | `PENDING_APPLICATION` |
+| Recently Approved [CON] Applications | `APPROVED` |
+| Recently Denied [CON] Applications | `DENIED` |
+| Disqualified Applications | `DISQUALIFIED` |
+| Appealed CON Projects | `APPEALED` |
+| Appealed Determinations | `APPEALED_DETERMINATION` |
+| Letters of Determination, generally / Requests for Miscellaneous LODs / Requests for DET-EQT / Requests for DET-ASC … | `LETTER_OF_DETERMINATION` |
+| DET Review, generally | `DET_REVIEW` |
+| LNR Conversion | `LNR_CONVERSION` |
+| Requests for Extended Implementation/Performance Period | `EXTENDED_IMPLEMENTATION` |
+| any other docket-bearing section | `OTHER` |
 
-Within a section, an entry starts at a line with a docket reference or a
-"Project No."-style label; labeled fields recognized: Applicant, Project
-[Description], County, Site, [Estimated/Total] [Project] Cost, Opposition,
-Date Filed/Filing Date/Filed, Decision Due/Deadline/Review Period Ends,
-Decision Date/Approved/Denied/Withdrawn. The **report date** must be findable
-near the top ("Week of …", "Report Date: …", or a bare date line) — loading
+The literal heading text is also stored on each event (`section_heading`).
+Sections whose body is the single word "none" produce no events.
+
+Within a section, an entry starts at a line with a docket reference —
+including the report's bare year-sequence CON project numbers (`2026-002`,
+canonicalized to `CON-2026002`) and subtyped determinations
+(`DET-EQT2024-073` → `DET-EQT-2024-073`). Application entries carry labeled
+fields (Filed / Deemed Complete / 30th Day Deadline / Decision Deadline /
+Site: … (County) / Contact / Estimated Cost, plus an `OPPOSITION FILED`
+marker); appealed-determination entries are litigation narratives whose
+"received on" date becomes `filing_date` and whose "Agency Decision: … on
+<date>" becomes `decision_date`, with the full narrative kept in `raw_text`.
+The **report date** comes from the reporting-period range on the cover page
+("April 15, 2026 – April 21, 2026" → the end date) — loading
 **fails** without it because `report_date` is NOT NULL.
 
 Loading semantics: events dedupe on `dedupe_hash`

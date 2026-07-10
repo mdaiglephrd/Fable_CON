@@ -115,9 +115,12 @@ con.weekly_report_event (
   event_id     BIGINT IDENTITY PK,
   report_date  DATE NOT NULL,
   report_file  NVARCHAR(400),
-  section      NVARCHAR(40) NOT NULL CHECK IN ('LETTER_OF_INTENT','NEW_APPLICATION',
-                'WITHDRAWN_APPLICATION','PENDING_APPLICATION','APPROVED','DENIED',
-                'APPEALED','LETTER_OF_DETERMINATION'),
+  section      NVARCHAR(40) NOT NULL CHECK IN (the 15 codes of vocab.REPORT_SECTIONS:
+                LETTER_OF_INTENT, LOI_EXPIRED, NEW_APPLICATION, WITHDRAWN_APPLICATION,
+                PENDING_APPLICATION, APPROVED, DENIED, DISQUALIFIED, APPEALED,
+                APPEALED_DETERMINATION, LETTER_OF_DETERMINATION, DET_REVIEW,
+                LNR_CONVERSION, EXTENDED_IMPLEMENTATION, OTHER),
+  section_heading NVARCHAR(200) NULL,      -- the report's literal heading text
   docket_id    NVARCHAR(50) NULL,          -- canonical; NULL when no docket in the entry
   docket_raw   NVARCHAR(100) NULL,         -- docket exactly as printed
   applicant    NVARCHAR(500),
@@ -182,7 +185,13 @@ Canonicalization rules:
 - Legacy `GA-#######` (embedded in names) -> canonical `CON-#######` with the `GA-...` form
   kept as a variant. ASSUMPTION: GA-number space == CON-number space; single constant
   `GA_MAPS_TO_CON = True` in docket.py to flip.
-- `DET...` -> `DET-` + the rest, internal separators normalized to hyphens.
+- `DET...` -> `DET-` + the rest, internal separators normalized to hyphens. Subtyped
+  determinations keep the subtype: `DET-EQT2024-073` -> `DET-EQT-2024-073`,
+  `DET-ASC...` likewise (kind stays 'DET').
+- Weekly-report CON project numbers print WITHOUT the prefix as year-seq (`2026-002`);
+  the repository form is `CON{YYYY}{SEQ3}` (`CON2026002`). The report parser (only —
+  too ambiguous for generic extraction) maps `2026-002` -> canonical `CON-2026002`
+  with `2026-002` kept as a variant.
 - `LNR-...` -> `LNR-` + rest, same normalization.
 - County legacy `FULTON-213`, `Ben Hill 45` -> `<COUNTY>-<N>` with multi-word counties
   hyphenated: `BEN-HILL-45`. County part must match one of the 159 counties.
