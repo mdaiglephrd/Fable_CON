@@ -1,0 +1,177 @@
+{
+  "baseType": "microsoft.graph.externalItem",
+  "properties": [
+    {
+      "name": "title",
+      "type": "String",
+      "isSearchable": true,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false,
+      "labels": ["title"]
+    },
+    {
+      "name": "docviewUrl",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": false,
+      "isRetrievable": true,
+      "isRefinable": false,
+      "labels": ["url"]
+    },
+    {
+      "name": "updatedAt",
+      "type": "DateTime",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false,
+      "labels": ["lastModifiedDateTime"]
+    },
+    {
+      "name": "entryId",
+      "type": "Int64",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false
+    },
+    {
+      "name": "docketId",
+      "type": "String",
+      "isSearchable": true,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false,
+      "aliases": ["docket"]
+    },
+    {
+      "name": "fileName",
+      "type": "String",
+      "isSearchable": true,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false
+    },
+    {
+      "name": "applicant",
+      "type": "String",
+      "isSearchable": true,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false
+    },
+    {
+      "name": "facility",
+      "type": "String",
+      "isSearchable": true,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false
+    },
+    {
+      "name": "decisionMaker",
+      "type": "String",
+      "isSearchable": true,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false
+    },
+    {
+      "name": "serviceArea",
+      "type": "String",
+      "isSearchable": true,
+      "isQueryable": false,
+      "isRetrievable": true,
+      "isRefinable": false
+    },
+    {
+      "name": "docType",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "phase",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "outcome",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "matterType",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "actionType",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "county",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "finalOutcome",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "validationStatus",
+      "type": "String",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "yearFiled",
+      "type": "Int64",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "docDate",
+      "type": "DateTime",
+      "isSearchable": false,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": true
+    },
+    {
+      "name": "serviceTypes",
+      "type": "StringCollection",
+      "isSearchable": true,
+      "isQueryable": true,
+      "isRetrievable": true,
+      "isRefinable": false
+    }
+  ]
+}

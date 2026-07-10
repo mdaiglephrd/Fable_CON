@@ -204,11 +204,14 @@ are what Search/Copilot key on — `title` and `url` matter most.
 | `validationStatus` | — | — | ✔ | ✔ | ✔ | Lets the agent/users filter unverified rows |
 | `yearFiled` | — | — | ✔ | ✔ | ✔ | |
 | `docDate` | — | — | ✔ | ✔ | ✔ | Date refiner |
-| `serviceTypes` | — | ✔ | ✔ | ✔ | ✔ (as StringCollection) | Slice by service type |
+| `serviceTypes` | — | ✔ | ✔ | ✔ | — | Free-text match on service types (see note) |
 
 Rule of thumb applied above: refiners (vocab-valued columns) are *not* marked
 searchable — refinable and searchable are generally mutually exclusive in the
 connector schema, and vocab codes belong in filters, not fuzzy text match.
+`serviceTypes` is the judgment call: marked **searchable** here (people type
+"cardiac cath" into search boxes); if you would rather have it as a refiner
+chip, mark it StringCollection + refinable and drop searchable.
 
 ### Step 6 — sync schedule and create
 
