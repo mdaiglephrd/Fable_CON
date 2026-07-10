@@ -17,6 +17,17 @@ in place rather than adding duplicates.
   The full repository index is ~1M+ rows; two full dicts would approach the memory
   ceiling of a consumption-plan Azure Function. One dict + streaming halves it.
 
+- **Failed ingestion blobs stay retryable: only `status='succeeded'` in con.processed_blob short-circuits.**
+  If a failure row also blocked reprocessing, the Functions host's blob-retry and the daily
+  sweep would both become no-ops after one bad run; a failed blob must be re-attemptable
+  after the underlying cause (bad file, transient outage) is fixed.
+
+- **Import Azure/pyodbc/pdfplumber lazily inside the functions that need them.**
+  Test and import cleanliness depend on it: this build environment has no libodbc,
+  and the API/functions modules must import with an empty environment. Config reads
+  are lazy for the same reason — fail at call time with the missing variable named,
+  never at import time.
+
 - **The weekly-report parser is built against a synthetic fixture until the real PDF arrives.**
   Layout assumptions (section headers, label names) are isolated in regex tables at the
   top of `ingest/weekly_report_parser.py` so re-tuning against the real DCH report is a

@@ -304,6 +304,9 @@ SQL_CONNECTION_STRING   # full ODBC string (optional; wins over the pair below)
 SQL_SERVER              # e.g. myserver.database.windows.net
 SQL_DATABASE            # e.g. condb
 STORAGE_CONNECTION      # Azure Storage connection string (functions local dev)
+STORAGE_ACCOUNT_URL     # https://<account>.blob.core.windows.net — managed-identity alternative
+                        # to STORAGE_CONNECTION (fallback order: STORAGE_CONNECTION ->
+                        # AzureWebJobsStorage -> STORAGE_ACCOUNT_URL + DefaultAzureCredential)
 SNAPSHOT_CONTAINER=index-snapshots
 REPORT_CONTAINER=weekly-reports
 FULLTEXT_ENABLED=true
