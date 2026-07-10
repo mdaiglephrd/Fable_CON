@@ -22,6 +22,10 @@ GO
 CREATE NONCLUSTERED INDEX IX_matter_service_type_service_type ON con.matter_service_type (service_type);
 GO
 
+-- matter_docket_variant: (variant) — docket resolution looks up by variant string
+CREATE NONCLUSTERED INDEX IX_matter_docket_variant_variant ON con.matter_docket_variant (variant);
+GO
+
 -- change_log: (entry_id), (detected_at), (change_type)
 CREATE NONCLUSTERED INDEX IX_change_log_entry_id    ON con.change_log (entry_id);
 CREATE NONCLUSTERED INDEX IX_change_log_detected_at ON con.change_log (detected_at);

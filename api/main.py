@@ -91,6 +91,7 @@ def _parse_json_field(row: dict[str, Any], field: str) -> None:
 
 # param -> (column expression, operator kind)
 MATTER_FILTERS: dict[str, tuple[str, str]] = {
+    "docket_id": ("m.docket_id", "eq"),
     "applicant": ("m.applicant", "like"),
     "facility": ("m.facility", "like"),
     "matter_type": ("m.matter_type", "eq"),
@@ -101,6 +102,8 @@ MATTER_FILTERS: dict[str, tuple[str, str]] = {
     "bed_count_max": ("m.bed_count", "lte"),
     "year_filed": ("m.year_filed", "eq"),
     "final_outcome": ("m.final_outcome", "eq"),
+    "final_decision_date_from": ("m.final_decision_date", "gte"),
+    "final_decision_date_to": ("m.final_decision_date", "lte"),
     "highest_review_level": ("m.highest_review_level", "eq"),
 }
 
@@ -113,6 +116,13 @@ MATTER_EXISTS_FILTERS: dict[str, str] = {
     "phase": (
         "EXISTS (SELECT 1 FROM con.matter_phase mp "
         "WHERE mp.docket_id = m.docket_id AND mp.phase = ?)"
+    ),
+    "docket_variant": (
+        "EXISTS (SELECT 1 FROM con.matter_docket_variant dv "
+        "WHERE dv.docket_id = m.docket_id AND dv.variant = ?)"
+    ),
+    "completeness_flag": (
+        "EXISTS (SELECT 1 FROM OPENJSON(m.completeness_flags) f WHERE f.value = ?)"
     ),
 }
 
@@ -136,7 +146,10 @@ MATTER_SORT: dict[str, str] = {
 }
 
 DOCUMENT_FILTERS: dict[str, tuple[str, str]] = {
+    "entry_id": ("d.entry_id", "eq"),
     "docket_id": ("d.docket_id", "eq"),
+    "file_name": ("d.file_name", "like"),
+    "source_path": ("d.source_path", "like"),
     "doc_type": ("d.doc_type", "eq"),
     "decision_level": ("d.decision_level", "eq"),
     "phase": ("d.phase", "eq"),
@@ -145,6 +158,18 @@ DOCUMENT_FILTERS: dict[str, tuple[str, str]] = {
     "decision_maker": ("d.decision_maker", "like"),
     "doc_date_from": ("d.doc_date", "gte"),
     "doc_date_to": ("d.doc_date", "lte"),
+    "page_count_min": ("d.page_count", "gte"),
+    "page_count_max": ("d.page_count", "lte"),
+    "repo_created_from": ("d.repo_date_created", "gte"),
+    "repo_created_to": ("d.repo_date_created", "lte"),
+    "repo_modified_from": ("d.repo_date_modified", "gte"),
+    "repo_modified_to": ("d.repo_date_modified", "lte"),
+    "ocr_confidence_min": ("d.ocr_confidence", "gte"),
+    "ocr_confidence_max": ("d.ocr_confidence", "lte"),
+    "validated_by": ("d.validated_by", "eq"),
+    "validated_from": ("d.validated_date", "gte"),
+    "validated_to": ("d.validated_date", "lte"),
+    "party": ("d.parties", "like"),  # parties is a JSON array; substring match on its text
     "template_name": ("d.template_name", "eq"),
     "ocr_status": ("d.ocr_status", "eq"),
     "duplicate_of": ("d.duplicate_of", "eq"),
@@ -295,6 +320,7 @@ def get_vocab(name: str) -> dict[str, Any]:
 
 @app.get("/matters")
 def list_matters(
+    docket_id: str | None = None,
     applicant: str | None = None,
     facility: str | None = None,
     matter_type: str | None = None,
@@ -305,9 +331,13 @@ def list_matters(
     bed_count_max: int | None = None,
     year_filed: int | None = None,
     final_outcome: str | None = None,
+    final_decision_date_from: date | None = None,
+    final_decision_date_to: date | None = None,
     highest_review_level: int | None = None,
     service_type: str | None = None,
     phase: str | None = None,
+    docket_variant: str | None = None,
+    completeness_flag: str | None = None,
     q: str | None = None,
     limit: int = DEFAULT_LIMIT,
     offset: int = 0,
@@ -316,6 +346,7 @@ def list_matters(
 ) -> dict[str, Any]:
     limit, offset = _clamp_paging(limit, offset)
     values = {
+        "docket_id": docket_id,
         "applicant": applicant,
         "facility": facility,
         "matter_type": matter_type,
@@ -326,9 +357,13 @@ def list_matters(
         "bed_count_max": bed_count_max,
         "year_filed": year_filed,
         "final_outcome": final_outcome,
+        "final_decision_date_from": final_decision_date_from,
+        "final_decision_date_to": final_decision_date_to,
         "highest_review_level": highest_review_level,
         "service_type": service_type,
         "phase": phase,
+        "docket_variant": docket_variant,
+        "completeness_flag": completeness_flag,
     }
     where, params = _build_where(values, MATTER_FILTERS, MATTER_EXISTS_FILTERS)
 
@@ -456,7 +491,10 @@ def get_matter(docket_id: str, conn: Any = Depends(get_db)) -> dict[str, Any]:
 
 @app.get("/documents")
 def list_documents(
+    entry_id: int | None = None,
     docket_id: str | None = None,
+    file_name: str | None = None,
+    source_path: str | None = None,
     doc_type: str | None = None,
     decision_level: int | None = None,
     phase: str | None = None,
@@ -465,6 +503,18 @@ def list_documents(
     decision_maker: str | None = None,
     doc_date_from: date | None = None,
     doc_date_to: date | None = None,
+    page_count_min: int | None = None,
+    page_count_max: int | None = None,
+    repo_created_from: datetime | None = None,
+    repo_created_to: datetime | None = None,
+    repo_modified_from: datetime | None = None,
+    repo_modified_to: datetime | None = None,
+    ocr_confidence_min: float | None = None,
+    ocr_confidence_max: float | None = None,
+    validated_by: str | None = None,
+    validated_from: datetime | None = None,
+    validated_to: datetime | None = None,
+    party: str | None = None,
     template_name: str | None = None,
     ocr_status: str | None = None,
     duplicate_of: int | None = None,
@@ -476,7 +526,10 @@ def list_documents(
 ) -> dict[str, Any]:
     limit, offset = _clamp_paging(limit, offset)
     values = {
+        "entry_id": entry_id,
         "docket_id": docket_id,
+        "file_name": file_name,
+        "source_path": source_path,
         "doc_type": doc_type,
         "decision_level": decision_level,
         "phase": phase,
@@ -485,6 +538,18 @@ def list_documents(
         "decision_maker": decision_maker,
         "doc_date_from": doc_date_from,
         "doc_date_to": doc_date_to,
+        "page_count_min": page_count_min,
+        "page_count_max": page_count_max,
+        "repo_created_from": repo_created_from,
+        "repo_created_to": repo_created_to,
+        "repo_modified_from": repo_modified_from,
+        "repo_modified_to": repo_modified_to,
+        "ocr_confidence_min": ocr_confidence_min,
+        "ocr_confidence_max": ocr_confidence_max,
+        "validated_by": validated_by,
+        "validated_from": validated_from,
+        "validated_to": validated_to,
+        "party": party,
         "template_name": template_name,
         "ocr_status": ocr_status,
         "duplicate_of": duplicate_of,

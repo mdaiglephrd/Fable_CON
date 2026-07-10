@@ -28,6 +28,12 @@ in place rather than adding duplicates.
   are lazy for the same reason — fail at call time with the missing variable named,
   never at import time.
 
+- **Separator-less DET/LNR ids canonicalize as one digit group — revisit with real samples.**
+  `DET2020014` becomes `DET-2020014` while `DET-2020-014` becomes `DET-2020-014`, so the
+  same docket printed both ways would key two matters. No grouping rule can be inferred
+  without real data; when samples arrive, if DET/LNR numbers have a fixed year+sequence
+  shape, add a regrouping rule in `common/docket.py` and re-key.
+
 - **The weekly-report parser is built against a synthetic fixture until the real PDF arrives.**
   Layout assumptions (section headers, label names) are isolated in regex tables at the
   top of `ingest/weekly_report_parser.py` so re-tuning against the real DCH report is a

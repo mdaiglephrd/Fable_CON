@@ -270,6 +270,61 @@ def test_documents_date_range_filter(client, fake_conn):
     assert date(2024, 12, 31) in params
 
 
+def test_documents_extended_metadata_filters(client, fake_conn):
+    fake_conn.script("COUNT(*)", rows=[(0,)])
+    fake_conn.script("SELECT d.*", rows=[], columns=["entry_id"])
+
+    response = client.get(
+        "/documents",
+        params={
+            "page_count_min": 10,
+            "ocr_confidence_min": 80.5,
+            "validated_by": "analyst@example.com",
+            "repo_modified_from": "2026-01-01T00:00:00",
+            "party": "Piedmont",
+            "file_name": "Order",
+        },
+    )
+    assert response.status_code == 200
+
+    sql, params = executed_with(fake_conn, "SELECT d.*")[0]
+    assert "d.page_count >= ?" in sql
+    assert "d.ocr_confidence >= ?" in sql
+    assert "d.validated_by = ?" in sql
+    assert "d.repo_date_modified >= ?" in sql
+    assert "d.parties LIKE ?" in sql
+    assert "d.file_name LIKE ?" in sql
+    assert "Piedmont" not in sql  # values parameterized, not interpolated
+    assert "%Piedmont%" in params
+    assert "analyst@example.com" in params
+    assert 10 in params
+
+
+def test_matters_decision_date_and_completeness_filters(client, fake_conn):
+    fake_conn.script("COUNT(*)", rows=[(0,)])
+    fake_conn.script("SELECT m.*", rows=[], columns=MATTER_COLUMNS)
+
+    response = client.get(
+        "/matters",
+        params={
+            "final_decision_date_from": "2025-01-01",
+            "final_decision_date_to": "2025-12-31",
+            "completeness_flag": "stub_from_weekly_report",
+            "docket_variant": "GA-1234567",
+        },
+    )
+    assert response.status_code == 200
+
+    sql, params = executed_with(fake_conn, "SELECT m.*")[0]
+    assert "m.final_decision_date >= ?" in sql
+    assert "m.final_decision_date <= ?" in sql
+    assert "OPENJSON(m.completeness_flags)" in sql
+    assert "con.matter_docket_variant" in sql
+    assert "stub_from_weekly_report" not in sql  # parameterized
+    assert "stub_from_weekly_report" in params
+    assert "GA-1234567" in params
+
+
 def test_document_detail_parses_parties_and_404s(client, fake_conn):
     fake_conn.script(
         "SELECT * FROM con.document WHERE entry_id = ?",
