@@ -229,3 +229,23 @@ class TestApplyDiff:
         assert (stats.added, stats.modified, stats.deleted) == (1, 1, 1)
         assert stats.change_rows == 3
         assert stats.in_scope == 2
+
+
+class TestRealSampleSnapshots:
+    """Regression against the real repository index snapshot samples."""
+
+    def test_diff_of_real_snapshots(self):
+        from pathlib import Path
+
+        fixtures = Path(__file__).parent / "fixtures"
+        old_stats = SnapshotReadStats()
+        new_stats = SnapshotReadStats()
+        diff = diff_snapshots(
+            read_snapshot(fixtures / "sample_snapshot_baseline.jsonl.gz", old_stats),
+            read_snapshot(fixtures / "sample_snapshot_next.jsonl.gz", new_stats),
+        )
+        assert (old_stats.records, old_stats.malformed) == (2000, 0)
+        assert (new_stats.records, new_stats.malformed) == (2002, 0)
+        assert (len(diff.added), len(diff.modified), len(diff.deleted)) == (5, 3, 3)
+        sample = diff.added[0]
+        assert set(sample) == {"id", "name", "ext", "path", "pages"}

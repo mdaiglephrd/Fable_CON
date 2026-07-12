@@ -4,6 +4,7 @@ These constants mirror the seed data in schema/migrations/. The codes stored in
 the database are these exact strings.
 """
 
+import re
 from collections.abc import Sequence
 
 SERVICE_TYPES: tuple[str, ...] = (
@@ -105,15 +106,27 @@ DECISION_LEVELS: dict[int, str] = {
 
 VALIDATION_STATUSES: tuple[str, ...] = ("Unvalidated", "Validated", "Corrected", "Rejected")
 
+# Lifecycle-event section codes for the weekly CON Tracking Report. The real
+# report has more section headings than codes; each event also stores the
+# literal heading (section_heading). Batching-cycle LOI headings map into
+# LETTER_OF_INTENT; the misc/EQT/ASC determination-request headings map into
+# LETTER_OF_DETERMINATION; informational sections map to OTHER.
 REPORT_SECTIONS: tuple[str, ...] = (
     "LETTER_OF_INTENT",
+    "LOI_EXPIRED",
     "NEW_APPLICATION",
     "WITHDRAWN_APPLICATION",
     "PENDING_APPLICATION",
     "APPROVED",
     "DENIED",
+    "DISQUALIFIED",
     "APPEALED",
+    "APPEALED_DETERMINATION",
     "LETTER_OF_DETERMINATION",
+    "DET_REVIEW",
+    "LNR_CONVERSION",
+    "EXTENDED_IMPLEMENTATION",
+    "OTHER",
 )
 
 # The 159 Georgia counties, Title Case as conventionally written.
@@ -158,17 +171,24 @@ def match_county(raw: str) -> str | None:
     return _COUNTY_LOOKUP.get(key.replace(" ", "").replace("-", ""))
 
 
+def _vocab_norm(value: str) -> str:
+    norm = " ".join(value.split()).casefold().replace("—", "-").replace("–", "-")
+    # Real DCH exports write "Application / Request" where the vocabulary has
+    # "Application/Request" — spacing around slashes is not significant.
+    return re.sub(r"\s*/\s*", "/", norm)
+
+
 def match_vocab(value: str, allowed: Sequence[str]) -> str | None:
     """Match a raw value against a controlled vocabulary.
 
-    Exact match after trimming and case-folding (also tolerates ASCII hyphens
-    where the vocabulary uses en/em dashes). No fuzzy guessing: unmatched
-    values return None and belong in a rejects report.
+    Exact match after trimming, case-folding, dash unification (ASCII hyphen
+    matches en/em dash), and slash-spacing normalization. No fuzzy guessing:
+    unmatched values return None and belong in a rejects report.
     """
     if not value:
         return None
-    norm = " ".join(value.split()).casefold().replace("—", "-").replace("–", "-")
+    norm = _vocab_norm(value)
     for a in allowed:
-        if norm == " ".join(a.split()).casefold().replace("—", "-").replace("–", "-"):
+        if norm == _vocab_norm(a):
             return a
     return None

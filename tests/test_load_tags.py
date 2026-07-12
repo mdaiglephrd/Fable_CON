@@ -162,7 +162,6 @@ class TestVocabRejection:
             "phase",
             "outcome",
             "final_outcome",
-            "validation_status",
         ],
     )
     def test_invalid_vocab_names_field(self, field_name):
@@ -171,6 +170,33 @@ class TestVocabRejection:
         assert exc.value.error.field == field_name
         assert exc.value.error.row_number == 9
         assert exc.value.error.raw_value == "Totally Bogus Value"
+
+    def test_unknown_validation_status_falls_back_to_default_with_warning(self, caplog):
+        # validation_status is loader-owned workflow state, not source metadata:
+        # real exports contain values like "Provisional", which mean "not yet
+        # validated here" — the row loads with the default status, not a reject.
+        with caplog.at_level("WARNING", logger="ingest.load_tags"):
+            shaped = shape_row(full_row(validation_status="Provisional"), row_number=9)
+        assert shaped.document["validation_status"] is None  # loader applies --default-status
+        assert any("Provisional" in r.message for r in caplog.records)
+
+    def test_export_form_decision_level_and_slash_spacing(self):
+        # Real export forms: "1 Desk Decision" and "Decision / Determination".
+        shaped = shape_row(
+            full_row(
+                decision_level="1 Desk Decision",
+                highest_review_level="4 Appellate Court Decision",
+                doc_type="Decision / Determination",
+            )
+        )
+        assert shaped.document["decision_level"] == 1
+        assert shaped.matter["highest_review_level"] == 4
+        assert shaped.document["doc_type"] == "Decision/Determination"
+
+    def test_decision_level_label_mismatch_rejects(self):
+        with pytest.raises(RowRejected) as exc:
+            shape_row(full_row(decision_level="1 Hearing Officer Decision"))
+        assert exc.value.error.field == "decision_level"
 
     def test_invalid_service_type_in_list_rejects(self):
         with pytest.raises(RowRejected) as exc:
@@ -345,3 +371,35 @@ class TestLoader:
     def test_bad_default_status_raises(self):
         with pytest.raises(ValueError):
             load_rows(FakeConnection(), [], default_status="Fancy")
+
+
+class TestRealSampleExport:
+    """Regression against the real DCH tag export sample (committed fixture)."""
+
+    def test_all_rows_shape(self):
+        import csv
+        from pathlib import Path
+
+        path = Path(__file__).parent / "fixtures" / "sample_tag_export.csv"
+        shaped = []
+        with path.open(newline="", encoding="utf-8-sig") as f:
+            for i, row in enumerate(csv.DictReader(f), start=2):
+                shaped.append(shape_row(row, row_number=i))
+
+        assert [s.docket_id for s in shaped] == [
+            "CON-2099001",
+            "CON-2099001",
+            "CON-2099002",
+            "DET-2099010",
+            "CON-2098050",
+            "CON-2099003",
+        ]
+        # Real export forms handled: "5 Initial Application", "Application / Request",
+        # en-dash phases, and the out-of-vocabulary "Provisional" status.
+        assert shaped[0].document["decision_level"] == 5
+        assert shaped[0].document["doc_type"] == "Application/Request"
+        assert shaped[4].document["phase"] == "Judicial Review – Court of Appeals"
+        assert shaped[4].document["validation_status"] is None  # "Provisional" -> default
+        assert shaped[4].document["outcome"] == "Affirmed (appeal)"
+        assert shaped[2].matter["county"] == "DeKalb"
+        assert shaped[3].document["decision_level"] == 1

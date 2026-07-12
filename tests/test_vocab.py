@@ -15,7 +15,7 @@ def test_vocab_sizes():
     assert len(vocab.OUTCOMES) == 13
     assert len(vocab.DECISION_LEVELS) == 5
     assert len(vocab.VALIDATION_STATUSES) == 4
-    assert len(vocab.REPORT_SECTIONS) == 8
+    assert len(vocab.REPORT_SECTIONS) == 15
 
 
 def test_match_county():

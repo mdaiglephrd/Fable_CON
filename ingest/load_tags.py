@@ -31,6 +31,8 @@ Contracts:
 import argparse
 import csv
 import json
+import logging
+import re
 import sys
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
@@ -50,6 +52,8 @@ from common.vocab import (
     match_county,
     match_vocab,
 )
+
+log = logging.getLogger(__name__)
 
 DOCVIEW_URL_TEMPLATE = (
     "https://weblink.dch.georgia.gov/WebLink/DocView.aspx"
@@ -232,6 +236,54 @@ def _vocab(
     return matched
 
 
+def _validation_status(row_number: int, value: object) -> str | None:
+    """Validation status from the row, or None (loader applies --default-status).
+
+    Unlike source metadata, validation_status is loader-owned workflow state:
+    a value outside the controlled list (real exports contain e.g.
+    "Provisional") means "not yet validated here", so it falls back to the
+    default with a warning instead of rejecting the whole row.
+    """
+    raw = _text(value)
+    if raw is None:
+        return None
+    matched = match_vocab(raw, VALIDATION_STATUSES)
+    if matched is None:
+        log.warning(
+            "row %d: validation_status %r not in %s; using default",
+            row_number,
+            raw,
+            "/".join(VALIDATION_STATUSES),
+        )
+    return matched
+
+
+def _parse_decision_level(row_number: int, field_name: str, value: object) -> int | None:
+    """Parse a decision level: 3, "3", or the export form "3 Superior Court Decision".
+
+    When a label accompanies the number it must match the vocabulary label for
+    that level (a mismatch means mislabeled data, which we reject, not guess).
+    """
+    raw = _text(value)
+    if raw is None:
+        return None
+    m = re.match(r"^(\d+)\s*(.*)$", raw)
+    if not m:
+        raise _reject(row_number, field_name, "not a decision level", value)
+    level = int(m.group(1))
+    if level not in DECISION_LEVELS:
+        raise _reject(row_number, field_name, "not a valid decision level (1-5)", value)
+    label = m.group(2).strip()
+    if label and match_vocab(label, [DECISION_LEVELS[level]]) is None:
+        raise _reject(
+            row_number,
+            field_name,
+            f"label does not match level {level} ({DECISION_LEVELS[level]!r})",
+            value,
+        )
+    return level
+
+
 def shape_row(row: dict, row_number: int = 0) -> ShapedRow:
     """Shape one export row (CSV all-strings dict or JSON typed dict).
 
@@ -272,24 +324,12 @@ def shape_row(row: dict, row_number: int = 0) -> ShapedRow:
         if county is None:
             raise _reject(row_number, "county", "not a Georgia county", row.get("county"))
 
-    highest_review_level = _parse_int(
+    highest_review_level = _parse_decision_level(
         row_number, "highest_review_level", row.get("highest_review_level")
     )
-    if highest_review_level is not None and highest_review_level not in DECISION_LEVELS:
-        raise _reject(
-            row_number,
-            "highest_review_level",
-            "not a valid decision level (1-5)",
-            row.get("highest_review_level"),
-        )
-    decision_level = _parse_int(row_number, "decision_level", row.get("decision_level"))
-    if decision_level is not None and decision_level not in DECISION_LEVELS:
-        raise _reject(
-            row_number,
-            "decision_level",
-            "not a valid decision level (1-5)",
-            row.get("decision_level"),
-        )
+    decision_level = _parse_decision_level(
+        row_number, "decision_level", row.get("decision_level")
+    )
 
     completeness_flags = _multi(row.get("completeness_flags"))
     parties = _multi(row.get("parties"))
@@ -337,9 +377,7 @@ def shape_row(row: dict, row_number: int = 0) -> ShapedRow:
         "template_name": _text(row.get("template_name")),
         "ocr_status": _text(row.get("ocr_status")),
         "ocr_confidence": _parse_float(row_number, "ocr_confidence", row.get("ocr_confidence")),
-        "validation_status": _vocab(
-            row_number, "validation_status", row.get("validation_status"), VALIDATION_STATUSES
-        ),
+        "validation_status": _validation_status(row_number, row.get("validation_status")),
         "validated_by": _text(row.get("validated_by")),
         "validated_date": _parse_datetime(
             row_number, "validated_date", row.get("validated_date")

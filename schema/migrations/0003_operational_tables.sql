@@ -55,6 +55,7 @@ CREATE TABLE con.weekly_report_event (
     report_date         DATE          NOT NULL,
     report_file         NVARCHAR(400) NULL,
     section             NVARCHAR(40)  NOT NULL,
+    section_heading     NVARCHAR(200) NULL,   -- the report's literal heading text
     docket_id           NVARCHAR(50)  NULL,   -- canonical; NULL when no docket in the entry
     docket_raw          NVARCHAR(100) NULL,   -- docket exactly as printed
     applicant           NVARCHAR(500) NULL,
@@ -72,9 +73,11 @@ CREATE TABLE con.weekly_report_event (
     CONSTRAINT FK_weekly_report_event_matter
         FOREIGN KEY (docket_id) REFERENCES con.matter (docket_id),
     CONSTRAINT CK_weekly_report_event_section
-        CHECK (section IN (N'LETTER_OF_INTENT', N'NEW_APPLICATION', N'WITHDRAWN_APPLICATION',
-                           N'PENDING_APPLICATION', N'APPROVED', N'DENIED',
-                           N'APPEALED', N'LETTER_OF_DETERMINATION')),
+        CHECK (section IN (N'LETTER_OF_INTENT', N'LOI_EXPIRED', N'NEW_APPLICATION',
+                           N'WITHDRAWN_APPLICATION', N'PENDING_APPLICATION', N'APPROVED',
+                           N'DENIED', N'DISQUALIFIED', N'APPEALED', N'APPEALED_DETERMINATION',
+                           N'LETTER_OF_DETERMINATION', N'DET_REVIEW', N'LNR_CONVERSION',
+                           N'EXTENDED_IMPLEMENTATION', N'OTHER')),
     CONSTRAINT UQ_weekly_report_event_dedupe_hash UNIQUE (dedupe_hash)
 );
 GO

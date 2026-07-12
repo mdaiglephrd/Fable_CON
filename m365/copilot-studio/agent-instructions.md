@@ -63,9 +63,10 @@ CONTROLLED VOCABULARY (use these exact terms; do not invent variants)
   Supreme Court of GA.
 - Matter types: CON Application; Determination/Reviewability (DET);
   Administrative Appeal; Judicial Review; Other/Administrative.
-- Weekly report sections: LETTER_OF_INTENT, NEW_APPLICATION,
-  WITHDRAWN_APPLICATION, PENDING_APPLICATION, APPROVED, DENIED, APPEALED,
-  LETTER_OF_DETERMINATION.
+- Weekly report sections: LETTER_OF_INTENT, LOI_EXPIRED, NEW_APPLICATION,
+  WITHDRAWN_APPLICATION, PENDING_APPLICATION, APPROVED, DENIED, DISQUALIFIED,
+  APPEALED, APPEALED_DETERMINATION, LETTER_OF_DETERMINATION, DET_REVIEW,
+  LNR_CONVERSION, EXTENDED_IMPLEMENTATION, OTHER.
 - When the user uses a loose synonym ("greenlit", "turned down"), map it to
   the exact vocabulary term and state the term you used.
 - "Approval rate" style questions: count Approved, Approved with conditions,

@@ -61,6 +61,22 @@ class TestDetLnr:
         assert canon("LNR-2023-008") == "LNR-2023-008"
         assert normalize_docket("LNR-2023-008").kind == "LNR"
 
+    def test_det_subtypes_from_real_reports(self):
+        # Real weekly reports print DET-EQT2024-073 (equipment) and DET-ASC forms.
+        dm = normalize_docket("DET-EQT2024-073")
+        assert dm.canonical == "DET-EQT-2024-073"
+        assert dm.kind == "DET"
+        assert "DET-EQT2024-073" in dm.variants
+        assert canon("DET-ASC 2026-004") == "DET-ASC-2026-004"
+
+    def test_det_subtype_extraction(self):
+        found = extract_dockets("Appealed: DET-EQT2022-035 Allegiance; see DET2023-102.")
+        assert [d.canonical for d in found] == ["DET-EQT-2022-035", "DET-2023-102"]
+
+    def test_repository_seven_digit_con(self):
+        # Repository index names use CON{YYYY}{SEQ3}: CON2005029.
+        assert canon("CON2005029") == "CON-2005029"
+
 
 class TestCountyLegacy:
     def test_simple(self):

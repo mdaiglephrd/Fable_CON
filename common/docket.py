@@ -29,7 +29,12 @@ _SEP = r"[\s\-_.–]"  # separators seen between prefix and digits (incl. en-das
 _TAIL = rf"(\d{{2,8}}(?:{_SEP}\d{{1,6}}){{0,2}})"
 
 _CON_RE = re.compile(rf"(?<![A-Za-z0-9])CON{_SEP}?{_TAIL}(?!\d)", re.IGNORECASE)
-_DET_RE = re.compile(rf"(?<![A-Za-z0-9])DET{_SEP}?{_TAIL}(?!\d)", re.IGNORECASE)
+# Determinations carry an optional subtype in the wild: DET-EQT2024-073 (equipment),
+# DET-ASC2025-001 (physician-owned ambulatory surgery). Canonical keeps it:
+# DET-EQT-2024-073.
+_DET_RE = re.compile(
+    rf"(?<![A-Za-z0-9])DET(?:{_SEP}?(EQT|ASC))?{_SEP}?{_TAIL}(?!\d)", re.IGNORECASE
+)
 _LNR_RE = re.compile(rf"(?<![A-Za-z0-9])LNR{_SEP}?{_TAIL}(?!\d)", re.IGNORECASE)
 # Legacy GA ids: hyphen/underscore/period or directly attached (never a bare space,
 # and 6-8 digits, so "Atlanta, GA 30303" style state+zip text can't match).
@@ -66,10 +71,13 @@ def _canonical_tail(tail: str) -> str:
     return "-".join(re.split(_SEP + "+", tail.strip()))
 
 
-def _prefix_match(prefix: str, tail: str, raw: str, *, from_ga: bool = False) -> DocketMatch | None:
+def _prefix_match(
+    prefix: str, tail: str, raw: str, *, kind: str | None = None, from_ga: bool = False
+) -> DocketMatch | None:
     groups = re.split(_SEP + "+", tail.strip())
+    is_det_or_lnr = prefix.startswith("DET") or prefix == "LNR"
     # A single short digit group ("CON 21") is more likely prose than a docket.
-    if len(groups) == 1 and len(groups[0]) < 4 and prefix != "DET" and prefix != "LNR":
+    if len(groups) == 1 and len(groups[0]) < 4 and not is_det_or_lnr:
         return None
     if len(groups) == 1 and len(groups[0]) < 3:
         return None
@@ -80,7 +88,7 @@ def _prefix_match(prefix: str, tail: str, raw: str, *, from_ga: bool = False) ->
         variants.update({f"GA-{canon_tail}", f"GA{canon_tail}"})
     return DocketMatch(
         canonical=canonical,
-        kind=prefix,
+        kind=kind or prefix,
         variants=tuple(sorted(variants)),
         raw=raw.strip(),
     )
@@ -101,11 +109,17 @@ def _county_match(county_raw: str, number: str, raw: str) -> DocketMatch:
 def _match_at(text: str, county_re: re.Pattern) -> list[tuple[int, DocketMatch]]:
     """All docket matches in text with their start offsets."""
     out: list[tuple[int, DocketMatch]] = []
-    for regex, prefix in ((_CON_RE, "CON"), (_DET_RE, "DET"), (_LNR_RE, "LNR")):
+    for regex, prefix in ((_CON_RE, "CON"), (_LNR_RE, "LNR")):
         for m in regex.finditer(text):
             dm = _prefix_match(prefix, m.group(1), m.group(0))
             if dm:
                 out.append((m.start(), dm))
+    for m in _DET_RE.finditer(text):
+        subtype = (m.group(1) or "").upper()
+        prefix = f"DET-{subtype}" if subtype else "DET"
+        dm = _prefix_match(prefix, m.group(2), m.group(0), kind="DET")
+        if dm:
+            out.append((m.start(), dm))
     for m in _GA_RE.finditer(text):
         target = "CON" if GA_MAPS_TO_CON else "GA"
         dm = _prefix_match(target, m.group(1), m.group(0), from_ga=True)
