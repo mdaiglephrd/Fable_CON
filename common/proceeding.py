@@ -13,8 +13,6 @@ precedent seed, and the en-US date formatting. Pure: no I/O.
 
 from datetime import date, timedelta
 
-from common.docket import normalize_docket
-
 REFERENCE_NOW = date(2026, 6, 25)  # matches docket-engine.js NOW = new Date(2026, 5, 25)
 
 _MONTHS = (
