@@ -129,6 +129,62 @@ REPORT_SECTIONS: tuple[str, ...] = (
     "OTHER",
 )
 
+# --- Research layer (v2) controlled vocabularies -----------------------------
+# These mirror the research-layer vocab tables in DESIGN.md ("RESEARCH LAYER
+# (v2)") and are seeded by schema/migrations/0007. Codes are the exact strings
+# stored in the database. Order matches the DESIGN tables.
+
+# con.vocab_treatment — citator treatment verbs.
+TREATMENTS: tuple[str, ...] = (
+    "Followed",
+    "Distinguished",
+    "Criticized",
+    "Reversed",
+    "Overruled",
+    "Cited",
+    "Neutral",
+)
+
+# con.vocab_docket_family — docket family classification (common/docket_family.py).
+DOCKET_FAMILIES: tuple[str, ...] = (
+    "CON",
+    "DET",
+    "DET-EQT",
+    "DET-ASC",
+    "LNR-ASC",
+    "LNR-EQT",
+)
+
+# con.vocab_event_type — docket_event timeline event types.
+EVENT_TYPES: tuple[str, ...] = (
+    "Filing",
+    "Order",
+    "Opinion",
+    "Hearing",
+    "Brief",
+    "Notice",
+)
+
+# con.vocab_counsel_side — party side for counsel / briefs.
+COUNSEL_SIDES: tuple[str, ...] = (
+    "Applicant",
+    "Petitioner",
+    "Respondent",
+    "Appellant",
+    "Appellee",
+    "Intervenor",
+    "Amicus",
+    "Agency",
+)
+
+# con.vocab_treatment_level — good-law banner level.
+TREATMENT_LEVELS: tuple[str, ...] = (
+    "positive",
+    "caution",
+    "negative",
+    "neutral",
+)
+
 # The 159 Georgia counties, Title Case as conventionally written.
 COUNTIES: tuple[str, ...] = (
     "Appling", "Atkinson", "Bacon", "Baker", "Baldwin", "Banks", "Barrow", "Bartow",
