@@ -29,13 +29,12 @@ param tags object = {}
 @allowed(['Free', 'Standard'])
 param sku string = 'Free'
 
-resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
+resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {  
   name: staticWebAppName
   location: location
   tags: tags
   sku: {
-    name: sku
-    tier: sku
+    name: 'Free'
   }
   identity: {
     type: 'SystemAssigned'
