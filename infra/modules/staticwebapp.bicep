@@ -25,10 +25,6 @@ param location string
 @description('Tags applied to all resources.')
 param tags object = {}
 
-@description('Static Web Apps hosting plan. Free is the default; Standard adds SLA, private endpoints, custom auth registrations and Key Vault reference support.')
-@allowed(['Free', 'Standard'])
-param sku string = 'Free'
-
 resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {  
   name: staticWebAppName
   location: location
