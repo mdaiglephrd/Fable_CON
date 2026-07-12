@@ -74,7 +74,7 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01' = {
 resource database 'Microsoft.Sql/servers/databases@2023-08-01' = {
   parent: sqlServer
   name: databaseName
-  location: location
+  location: sqlLocation
   tags: tags
   sku: {
     name: 'GP_S_Gen5'
