@@ -82,6 +82,28 @@ param logRetentionDays int = 30
 @description('Append uniqueString(resourceGroup().id) to the storage account name for global uniqueness.')
 param useUniqueStorageSuffix bool = true
 
+// --- Research layer (v2): console + document-text extraction ------------------
+
+@description('Deploy an Azure Static Web App (Free plan) to host the React research console in web/.')
+param deployStaticWebApp bool = true
+
+@description('Region for the Static Web App. Static Web Apps are offered in a limited set of regions (e.g. westus2, centralus, eastus2, westeurope, eastasia); override if the resource group region is unsupported. Defaults to the deployment location.')
+param staticWebAppLocation string = location
+
+@description('Deploy an Azure AI Document Intelligence account for the document-text extraction step.')
+param deployDocIntel bool = true
+
+@description('Document Intelligence pricing tier. F0 is free (500 pages/month); S0 is standard pay-as-you-go for backfills that exceed the free monthly limit. See README cost table.')
+@allowed(['F0', 'S0'])
+param docIntelSku string = 'F0'
+
+@description('Enable the Azure SQL Database free offer (GP serverless: 100k vCore-seconds + 32 GB data + 32 GB backup free per month, per database). See README "Enable the SQL free offer".')
+param sqlUseFreeOffer bool = true
+
+@description('App Service plan SKU for the API. F1 (Free) suits pilot use — 60 CPU-min/day, no Always-On, cold starts; B1 (~$13/mo) for steady state.')
+@allowed(['F1', 'B1'])
+param appServicePlanSku string = 'B1'
+
 // ----------------------------- variables ------------------------------------
 
 var baseName = toLower('${namePrefix}-${environment}')
@@ -93,7 +115,10 @@ var storageAccountName = take('${storagePrefix}${toLower(environment)}st${storag
 
 var snapshotContainer = 'index-snapshots'
 var reportContainer = 'weekly-reports'
-var blobContainers = [snapshotContainer, reportContainer, 'tag-exports']
+// document-text: raw text extracted by Document Intelligence, consumed by
+// ingest/load_document_text.py to populate con.document_text.
+var documentTextContainer = 'document-text'
+var blobContainers = [snapshotContainer, reportContainer, 'tag-exports', documentTextContainer]
 
 var searchIndexName = 'con-records'
 var chatDeploymentName = 'gpt-4o-mini'
@@ -143,6 +168,7 @@ module sql 'modules/sql.bicep' = {
     adminTenantId: sqlAdminTenantId
     adminPrincipalType: sqlAdminPrincipalType
     enablePublicNetworkAccess: enablePublicNetworkAccess
+    sqlUseFreeOffer: sqlUseFreeOffer
   }
 }
 
@@ -171,8 +197,30 @@ module openAi 'modules/openai.bicep' = if (deployOpenAI) {
   }
 }
 
+module staticWebApp 'modules/staticwebapp.bicep' = if (deployStaticWebApp) {
+  name: 'staticwebapp'
+  params: {
+    staticWebAppName: '${baseName}-web'
+    location: staticWebAppLocation
+    tags: tags
+    sku: 'Free'
+  }
+}
+
+module docIntel 'modules/docintelligence.bicep' = if (deployDocIntel) {
+  name: 'docintel'
+  params: {
+    accountName: '${baseName}-di'
+    location: location
+    tags: tags
+    docIntelSku: docIntelSku
+  }
+}
+
 var searchEndpoint = deploySearch ? search!.outputs.endpoint : ''
 var azureOpenAiEndpoint = deployOpenAI ? openAi!.outputs.endpoint : ''
+var docIntelEndpoint = deployDocIntel ? docIntel!.outputs.endpoint : ''
+var consoleOrigin = deployStaticWebApp ? 'https://${staticWebApp!.outputs.defaultHostName}' : ''
 
 module functions 'modules/functions.bicep' = {
   name: 'functions'
@@ -208,7 +256,10 @@ module appService 'modules/appservice.bicep' = {
     azureOpenAiEndpoint: azureOpenAiEndpoint
     azureOpenAiChatDeployment: chatDeploymentName
     azureOpenAiEmbeddingDeployment: embeddingDeploymentName
+    docIntelEndpoint: docIntelEndpoint
+    consoleOrigin: consoleOrigin
     keyVaultUri: keyVault.outputs.keyVaultUri
+    planSku: appServicePlanSku
   }
 }
 
@@ -241,6 +292,16 @@ module rolesOpenAi 'modules/roles-openai.bicep' = if (deployOpenAI) {
   }
 }
 
+// web app MSI -> Cognitive Services User on the Document Intelligence account.
+// The Static Web App identity is granted nothing extra (it calls the API over HTTPS).
+module rolesDocIntel 'modules/roles-docintel.bicep' = if (deployDocIntel) {
+  name: 'rbac-docintel'
+  params: {
+    docIntelAccountName: docIntel!.outputs.name
+    webAppPrincipalId: appService.outputs.principalId
+  }
+}
+
 // ----------------------------- outputs --------------------------------------
 
 @description('Fully qualified domain name of the SQL logical server (SQL_SERVER).')
@@ -251,6 +312,12 @@ output functionAppName string = functions.outputs.functionAppName
 
 @description('Name of the FastAPI web app.')
 output webAppName string = appService.outputs.webAppName
+
+@description('Default hostname of the research console Static Web App; empty when deployStaticWebApp = false.')
+output staticWebAppHostname string = deployStaticWebApp ? staticWebApp!.outputs.defaultHostName : ''
+
+@description('Azure AI Document Intelligence endpoint (DOCUMENT_INTELLIGENCE_ENDPOINT); empty when deployDocIntel = false.')
+output docIntelEndpoint string = docIntelEndpoint
 
 @description('Azure AI Search endpoint (SEARCH_ENDPOINT); empty when deploySearch = false.')
 output searchEndpoint string = searchEndpoint

@@ -41,6 +41,13 @@ param autoPauseDelayMinutes int = 60
 @description('Serverless minimum vCores (as a decimal string, e.g. "0.5").')
 param minCapacity string = '0.5'
 
+@description('Enable the Azure SQL Database free offer on this database: 100,000 vCore-seconds of General Purpose serverless compute + 32 GB data + 32 GB backup, free per month per database (up to 10 free databases per subscription, for the life of the subscription). Requires the GP serverless SKU configured below. See https://learn.microsoft.com/azure/azure-sql/database/free-offer and the README "Enable the SQL free offer" step.')
+param sqlUseFreeOffer bool = true
+
+@description('Behavior when the monthly free limit is exhausted (applied only when sqlUseFreeOffer = true). AutoPause: pause the database until the next calendar month (stays $0). BillOverUsage: keep it online and bill overage at standard GP serverless rates.')
+@allowed(['AutoPause', 'BillOverUsage'])
+param freeLimitExhaustionBehavior string = 'AutoPause'
+
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01' = {
   name: serverName
   location: location
@@ -79,6 +86,11 @@ resource database 'Microsoft.Sql/servers/databases@2023-08-01' = {
     minCapacity: json(minCapacity)
     zoneRedundant: false
     requestedBackupStorageRedundancy: 'Local'
+    // Azure SQL Database free offer (GP serverless). Both properties are supported
+    // on Microsoft.Sql/servers/databases@2023-08-01. The GP_S_Gen5 / 32 GB /
+    // auto-pause config above already satisfies the free-offer requirements.
+    useFreeLimit: sqlUseFreeOffer
+    freeLimitExhaustionBehavior: sqlUseFreeOffer ? freeLimitExhaustionBehavior : null
   }
 }
 

@@ -43,8 +43,18 @@ param azureOpenAiChatDeployment string = 'gpt-4o-mini'
 @description('Embedding model deployment name (AZURE_OPENAI_EMBEDDING_DEPLOYMENT).')
 param azureOpenAiEmbeddingDeployment string = 'text-embedding-3-small'
 
+@description('Azure AI Document Intelligence endpoint (DOCUMENT_INTELLIGENCE_ENDPOINT); empty when Document Intelligence is not deployed. The API authenticates with its managed identity (Cognitive Services User role) — no key is stored here; a DOCUMENT_INTELLIGENCE_KEY would only be an out-of-band Key Vault-referenced fallback.')
+param docIntelEndpoint string = ''
+
+@description('Origin of the research console for CORS (CONSOLE_ORIGIN), e.g. https://<name>.azurestaticapps.net. Empty when the Static Web App is not deployed. Add custom-domain origins to the API CORS config separately.')
+param consoleOrigin string = ''
+
 @description('Key Vault URI (KEY_VAULT_URI); optional fallback source for secrets.')
 param keyVaultUri string = ''
+
+@description('App Service plan SKU. F1 (Free) works for pilot use — 60 CPU-min/day, no Always-On, cold starts; B1 (~$13/mo) for steady state.')
+@allowed(['F1', 'B1'])
+param planSku string = 'B1'
 
 resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: planName
@@ -52,8 +62,8 @@ resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   tags: tags
   kind: 'linux'
   sku: {
-    name: 'B1'
-    tier: 'Basic'
+    name: planSku
+    tier: planSku == 'F1' ? 'Free' : 'Basic'
   }
   properties: {
     reserved: true // Linux
@@ -109,6 +119,17 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT'
           value: azureOpenAiEmbeddingDeployment
+        }
+        {
+          // Document Intelligence endpoint; the API calls it with its MSI
+          // (DefaultAzureCredential) — no key here. See infra/README.md.
+          name: 'DOCUMENT_INTELLIGENCE_ENDPOINT'
+          value: docIntelEndpoint
+        }
+        {
+          // Static Web App origin, for the API's CORS allow-list.
+          name: 'CONSOLE_ORIGIN'
+          value: consoleOrigin
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
