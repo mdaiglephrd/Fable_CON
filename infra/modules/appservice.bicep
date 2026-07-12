@@ -52,14 +52,18 @@ param consoleOrigin string = ''
 @description('Key Vault URI (KEY_VAULT_URI); optional fallback source for secrets.')
 param keyVaultUri string = ''
 
+@description('App Service plan SKU. F1 (Free) works for pilot use — 60 CPU-min/day, no Always-On, cold starts; B1 (~$13/mo) for steady state.')
+@allowed(['F1', 'B1'])
+param planSku string = 'B1'
+
 resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: planName
   location: location
   tags: tags
   kind: 'linux'
   sku: {
-    name: 'B1'
-    tier: 'Basic'
+    name: planSku
+    tier: planSku == 'F1' ? 'Free' : 'Basic'
   }
   properties: {
     reserved: true // Linux

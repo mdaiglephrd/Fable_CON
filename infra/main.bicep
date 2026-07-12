@@ -100,6 +100,10 @@ param docIntelSku string = 'F0'
 @description('Enable the Azure SQL Database free offer (GP serverless: 100k vCore-seconds + 32 GB data + 32 GB backup free per month, per database). See README "Enable the SQL free offer".')
 param sqlUseFreeOffer bool = true
 
+@description('App Service plan SKU for the API. F1 (Free) suits pilot use — 60 CPU-min/day, no Always-On, cold starts; B1 (~$13/mo) for steady state.')
+@allowed(['F1', 'B1'])
+param appServicePlanSku string = 'B1'
+
 // ----------------------------- variables ------------------------------------
 
 var baseName = toLower('${namePrefix}-${environment}')
@@ -255,6 +259,7 @@ module appService 'modules/appservice.bicep' = {
     docIntelEndpoint: docIntelEndpoint
     consoleOrigin: consoleOrigin
     keyVaultUri: keyVault.outputs.keyVaultUri
+    planSku: appServicePlanSku
   }
 }
 
