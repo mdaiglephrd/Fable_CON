@@ -1,0 +1,3518 @@
+{
+  "con_pending": {
+    "rec": {
+      "type": "CON",
+      "num": "CON2026006",
+      "facility": "Grady Memorial Hospital",
+      "received": "4/14/2026",
+      "date": null,
+      "finding": "Pending",
+      "county": "Fulton"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "CON",
+        "color": "#F43F5E"
+      },
+      "isClosed": false,
+      "isActive": true,
+      "filedLine": "Filed Apr 14, 2026",
+      "closedLine": null,
+      "durationLine": null,
+      "finalDisposition": null,
+      "precedent": null,
+      "compact": [
+        {
+          "code": "Intent",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Initial",
+          "status": "pending",
+          "tag": null
+        },
+        {
+          "code": "Admin",
+          "status": "pending"
+        },
+        {
+          "code": "Agency",
+          "status": "pending"
+        },
+        {
+          "code": "Superior",
+          "status": "pending"
+        },
+        {
+          "code": "Appellate",
+          "status": "pending"
+        },
+        {
+          "code": "Final",
+          "status": "pending"
+        }
+      ],
+      "stages": [
+        {
+          "n": "0",
+          "status": "complete",
+          "title": "Letter of Intent",
+          "dateLine": "Filed Apr 14, 2026",
+          "substeps": [
+            {
+              "code": "0a",
+              "label": "Submission",
+              "tip": {
+                "title": "0a · Submission",
+                "status": "complete",
+                "rows": [
+                  "Letter of intent filed Apr 14, 2026.",
+                  "Required pre-application filing — sets review cycle and batching window."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            },
+            {
+              "code": "0b",
+              "label": "Acknowledgement",
+              "tip": {
+                "title": "0b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Acknowledged Apr 17, 2026.",
+                  "Planning service area: Fulton County."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            }
+          ]
+        },
+        {
+          "n": "1",
+          "status": "active",
+          "title": "Initial Filing Review",
+          "dateLine": "Submitted Apr 14, 2026 · 120-day review clock",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Receipt",
+              "tip": {
+                "title": "1a · Application Submitted",
+                "status": "complete",
+                "rows": [
+                  "Submitted Apr 14, 2026.",
+                  "Filing fee paid · 120-day review clock started."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Batching",
+              "tip": {
+                "title": "1b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Batching window opened Apr 24, 2026.",
+                  "Reviewed against competing applications in the same planning service area, if any."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Public Notice",
+              "tip": {
+                "title": "1c · Public Comment / Opposition",
+                "status": "complete",
+                "rows": [
+                  "Notice period opened May 4, 2026.",
+                  "Affected persons may file comments or notice of opposition."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1d",
+              "label": "Agency Decision",
+              "tip": {
+                "title": "1d · Desk Decision",
+                "status": "pending",
+                "rows": [
+                  "Due by Aug 12, 2026 (120 days from filing)."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "approved",
+              "label": "Approved",
+              "status": "not-taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            },
+            {
+              "key": "conditions",
+              "label": "Approved with Conditions",
+              "status": "not-taken",
+              "title": "Conditions may include bed limits, service restrictions, or compliance reporting"
+            },
+            {
+              "key": "denied",
+              "label": "Denied",
+              "status": "not-taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "pending",
+          "title": "Initial Decision Challenge",
+          "dateLine": "Opens on desk decision · 30-day window",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "2a · Challenge Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Aug 26, 2026 (within 30 days of the letter of determination).",
+                  "Any aggrieved party who timely intervened may request review."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Challenge Registered",
+              "tip": {
+                "title": "2b · Challenge Registered",
+                "status": "complete",
+                "rows": [
+                  "Docketed by DCH Office of Health Planning.",
+                  "Timeliness and standing screened before assignment to a hearing officer."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge filed → proceeds",
+              "status": "taken",
+              "title": "Proceeds to Stage 3 (Administrative Appeal)"
+            },
+            {
+              "key": "nochallenge",
+              "label": "No challenge filed",
+              "status": "not-taken",
+              "title": "Desk decision becomes final — no further review"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "pending",
+          "title": "Administrative Appeal",
+          "dateLine": "Appointed Sep 25, 2026",
+          "substeps": [
+            {
+              "code": "3a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "3a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed Sep 25, 2026 (within 30 days of the challenge).",
+                  "Assigned by the Office of State Administrative Hearings."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "3b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held Oct 4, 2026.",
+                  "Hearing dates and discovery deadlines set."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "3c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after appointment.",
+                  "Hearing dates: Jan 2, 2027."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "3d",
+              "label": "Hearing",
+              "tip": {
+                "title": "3d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidentiary hearing on need, financial feasibility, and access criteria.",
+                  "Parties: DCH, applicant, and any intervening competing applicant."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "3e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "3e · Hearing Officer Decision",
+                "status": "pending",
+                "rows": [
+                  "Due within 30 days of hearing conclusion."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "4",
+          "status": "pending",
+          "title": "Final Agency Decision",
+          "dateLine": "Triggered upon Stage 3 conclusion",
+          "regimeNote": {
+            "current": {
+              "label": "Reformed Regime (HB 1339)",
+              "tag": "current",
+              "detail": "Hearing officer decision = final agency decision. Effective 2024 · No Commissioner review."
+            },
+            "legacy": {
+              "label": "Prior Regime (Pre-2024)",
+              "tag": "legacy",
+              "detail": "Optional Commissioner review · 61-day finality window."
+            }
+          }
+        },
+        {
+          "n": "5",
+          "status": "pending",
+          "title": "Judicial Review",
+          "dateLine": "Petition within 30 days of final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Petition Filed",
+              "tip": {
+                "title": "5a · Petition for Judicial Review",
+                "status": "complete",
+                "rows": [
+                  "Must file within 30 days of the final agency decision.",
+                  "Any party except DCH may petition · Venue: Superior Court."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Record Transmittal",
+              "tip": {
+                "title": "5b · Record Transmittal",
+                "status": "complete",
+                "rows": [
+                  "DCH must transmit the certified record and transcript within 30 days of notice of appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Hearing on Record",
+              "tip": {
+                "title": "5c · Hearing on the Record",
+                "status": "complete",
+                "rows": [
+                  "Review confined to the administrative record — no new evidence.",
+                  "Deferential, substantial-evidence standard."
+                ],
+                "statute": "O.C.G.A. § 50-13-19"
+              }
+            },
+            {
+              "code": "5d",
+              "label": "Disposition",
+              "tip": {
+                "title": "5d · Superior Court Disposition",
+                "status": "pending",
+                "rows": [
+                  "Branch: Affirm / Reverse / Remand.",
+                  "120-day default rule: if the court does not hear within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            }
+          ]
+        },
+        {
+          "n": "6",
+          "status": "pending",
+          "title": "Appellate Review",
+          "dateLine": "Upon Superior Court disposition",
+          "substeps": [
+            {
+              "code": "6a",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "6a · Court of Appeals",
+                "status": "pending",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "6b",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "6b · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review.",
+                  "Petition for cert. granted or denied."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        },
+        {
+          "n": "7",
+          "status": "pending",
+          "title": "Terminal Outcomes",
+          "dateLine": "",
+          "terminal": [
+            {
+              "key": "approved",
+              "label": "Approved & Conditions Pending",
+              "status": "not-taken"
+            },
+            {
+              "key": "constructed",
+              "label": "Constructed & Licensed",
+              "status": "not-taken"
+            },
+            {
+              "key": "unbuilt",
+              "label": "Unbuilt / Lapsed CON",
+              "status": "not-taken"
+            },
+            {
+              "key": "remanded",
+              "label": "Remanded",
+              "status": "not-taken"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "con_approved": {
+    "rec": {
+      "type": "CON",
+      "num": "CON2026004",
+      "facility": "Wellstar Douglas",
+      "received": "2/28/2026",
+      "date": "4/4/2026",
+      "finding": "Approved",
+      "county": "Douglas"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "CON",
+        "color": "#F43F5E"
+      },
+      "isClosed": true,
+      "isActive": false,
+      "filedLine": "Filed Feb 28, 2026",
+      "closedLine": "Closed Apr 4, 2026",
+      "durationLine": "1 month",
+      "finalDisposition": "CON Approved — Effective Apr 4, 2026",
+      "precedent": {
+        "key": "valid",
+        "label": "VALID PRECEDENT",
+        "color": "#10B981",
+        "bg": "rgba(16,185,129,0.12)",
+        "detail": "No negative subsequent treatment found · Last reviewed May 26, 2026"
+      },
+      "compact": [
+        {
+          "code": "Intent",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Initial",
+          "status": "complete",
+          "tag": null
+        },
+        {
+          "code": "Admin",
+          "status": "complete"
+        },
+        {
+          "code": "Agency",
+          "status": "complete"
+        },
+        {
+          "code": "Superior",
+          "status": "complete"
+        },
+        {
+          "code": "Appellate",
+          "status": "complete"
+        },
+        {
+          "code": "Final",
+          "status": "complete"
+        }
+      ],
+      "stages": [
+        {
+          "n": "0",
+          "status": "complete",
+          "title": "Letter of Intent",
+          "dateLine": "Filed Feb 28, 2026",
+          "substeps": [
+            {
+              "code": "0a",
+              "label": "Submission",
+              "tip": {
+                "title": "0a · Submission",
+                "status": "complete",
+                "rows": [
+                  "Letter of intent filed Feb 28, 2026.",
+                  "Required pre-application filing — sets review cycle and batching window."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            },
+            {
+              "code": "0b",
+              "label": "Acknowledgement",
+              "tip": {
+                "title": "0b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Acknowledged Mar 3, 2026.",
+                  "Planning service area: Douglas County."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            }
+          ]
+        },
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Initial Filing Review",
+          "dateLine": "Submitted Feb 28, 2026 · Decision Apr 4, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Receipt",
+              "tip": {
+                "title": "1a · Application Submitted",
+                "status": "complete",
+                "rows": [
+                  "Submitted Feb 28, 2026.",
+                  "Filing fee paid · 120-day review clock started."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Batching",
+              "tip": {
+                "title": "1b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Batching window opened Mar 10, 2026.",
+                  "Reviewed against competing applications in the same planning service area, if any."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Public Notice",
+              "tip": {
+                "title": "1c · Public Comment / Opposition",
+                "status": "complete",
+                "rows": [
+                  "Notice period opened Mar 20, 2026.",
+                  "Affected persons may file comments or notice of opposition."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1d",
+              "label": "Agency Decision",
+              "tip": {
+                "title": "1d · Desk Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Apr 4, 2026 — APPROVED.",
+                  "DCH Office of Health Planning project officer of record."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "approved",
+              "label": "Approved",
+              "status": "taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            },
+            {
+              "key": "conditions",
+              "label": "Approved with Conditions",
+              "status": "not-taken",
+              "title": "Conditions may include bed limits, service restrictions, or compliance reporting"
+            },
+            {
+              "key": "denied",
+              "label": "Denied",
+              "status": "not-taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "Initial Decision Challenge",
+          "dateLine": "Challenge window closed",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "2a · Challenge Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Apr 18, 2026 (within 30 days of the letter of determination).",
+                  "Any aggrieved party who timely intervened may request review."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Challenge Registered",
+              "tip": {
+                "title": "2b · Challenge Registered",
+                "status": "complete",
+                "rows": [
+                  "Docketed by DCH Office of Health Planning.",
+                  "Timeliness and standing screened before assignment to a hearing officer."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge filed → proceeds",
+              "status": "taken",
+              "title": "Proceeds to Stage 3 (Administrative Appeal)"
+            },
+            {
+              "key": "nochallenge",
+              "label": "No challenge filed",
+              "status": "not-taken",
+              "title": "Desk decision becomes final — no further review"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Administrative Appeal",
+          "dateLine": "Hearing Aug 25, 2026 · Decision Sep 22, 2026",
+          "substeps": [
+            {
+              "code": "3a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "3a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed May 18, 2026 (within 30 days of the challenge).",
+                  "Assigned by the Office of State Administrative Hearings."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "3b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held May 27, 2026.",
+                  "Hearing dates and discovery deadlines set."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "3c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after appointment.",
+                  "Hearing dates: Aug 25, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "3d",
+              "label": "Hearing",
+              "tip": {
+                "title": "3d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidentiary hearing on need, financial feasibility, and access criteria.",
+                  "Parties: DCH, applicant, and any intervening competing applicant."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "3e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "3e · Hearing Officer Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Sep 22, 2026 — Affirmed approval."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "4",
+          "status": "complete",
+          "title": "Final Agency Decision",
+          "dateLine": "Effective Sep 22, 2026",
+          "regimeNote": {
+            "current": {
+              "label": "Reformed Regime (HB 1339)",
+              "tag": "current",
+              "detail": "Hearing officer decision = final agency decision. Effective 2024 · No Commissioner review."
+            },
+            "legacy": {
+              "label": "Prior Regime (Pre-2024)",
+              "tag": "legacy",
+              "detail": "Optional Commissioner review · 61-day finality window."
+            }
+          }
+        },
+        {
+          "n": "5",
+          "status": "complete",
+          "title": "Judicial Review",
+          "dateLine": "Petition within 30 days of final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Petition Filed",
+              "tip": {
+                "title": "5a · Petition for Judicial Review",
+                "status": "complete",
+                "rows": [
+                  "Must file within 30 days of the final agency decision.",
+                  "Any party except DCH may petition · Venue: Superior Court."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Record Transmittal",
+              "tip": {
+                "title": "5b · Record Transmittal",
+                "status": "complete",
+                "rows": [
+                  "DCH must transmit the certified record and transcript within 30 days of notice of appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Hearing on Record",
+              "tip": {
+                "title": "5c · Hearing on the Record",
+                "status": "complete",
+                "rows": [
+                  "Review confined to the administrative record — no new evidence.",
+                  "Deferential, substantial-evidence standard."
+                ],
+                "statute": "O.C.G.A. § 50-13-19"
+              }
+            },
+            {
+              "code": "5d",
+              "label": "Disposition",
+              "tip": {
+                "title": "5d · Superior Court Disposition",
+                "status": "complete",
+                "rows": [
+                  "Branch: Affirm / Reverse / Remand.",
+                  "120-day default rule: if the court does not hear within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            }
+          ]
+        },
+        {
+          "n": "6",
+          "status": "complete",
+          "title": "Appellate Review",
+          "dateLine": "Upon Superior Court disposition",
+          "substeps": [
+            {
+              "code": "6a",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "6a · Court of Appeals",
+                "status": "complete",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "6b",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "6b · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review.",
+                  "Petition for cert. granted or denied."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        },
+        {
+          "n": "7",
+          "status": "complete",
+          "title": "Terminal Outcomes",
+          "dateLine": "Record closed Apr 4, 2026",
+          "terminal": [
+            {
+              "key": "approved",
+              "label": "Approved & Conditions Pending",
+              "status": "taken"
+            },
+            {
+              "key": "constructed",
+              "label": "Constructed & Licensed",
+              "status": "not-taken"
+            },
+            {
+              "key": "unbuilt",
+              "label": "Unbuilt / Lapsed CON",
+              "status": "not-taken"
+            },
+            {
+              "key": "remanded",
+              "label": "Remanded",
+              "status": "not-taken"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "con_denied": {
+    "rec": {
+      "type": "CON",
+      "num": "CON24-0042",
+      "facility": "Northridge Cardiac",
+      "received": "6/12/2024",
+      "date": "11/1/2024",
+      "finding": "Denied",
+      "county": "Forsyth"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "CON",
+        "color": "#F43F5E"
+      },
+      "isClosed": true,
+      "isActive": false,
+      "filedLine": "Filed Jun 12, 2024",
+      "closedLine": "Closed Nov 1, 2024",
+      "durationLine": "5 months",
+      "finalDisposition": "CON Denied — Affirmed through review",
+      "precedent": {
+        "key": "valid",
+        "label": "VALID PRECEDENT",
+        "color": "#10B981",
+        "bg": "rgba(16,185,129,0.12)",
+        "detail": "No negative subsequent treatment found · Last reviewed May 26, 2026"
+      },
+      "compact": [
+        {
+          "code": "Intent",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Initial",
+          "status": "complete",
+          "tag": null
+        },
+        {
+          "code": "Admin",
+          "status": "complete"
+        },
+        {
+          "code": "Agency",
+          "status": "complete"
+        },
+        {
+          "code": "Superior",
+          "status": "complete"
+        },
+        {
+          "code": "Appellate",
+          "status": "complete"
+        },
+        {
+          "code": "Final",
+          "status": "complete"
+        }
+      ],
+      "stages": [
+        {
+          "n": "0",
+          "status": "complete",
+          "title": "Letter of Intent",
+          "dateLine": "Filed Jun 12, 2024",
+          "substeps": [
+            {
+              "code": "0a",
+              "label": "Submission",
+              "tip": {
+                "title": "0a · Submission",
+                "status": "complete",
+                "rows": [
+                  "Letter of intent filed Jun 12, 2024.",
+                  "Required pre-application filing — sets review cycle and batching window."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            },
+            {
+              "code": "0b",
+              "label": "Acknowledgement",
+              "tip": {
+                "title": "0b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Acknowledged Jun 15, 2024.",
+                  "Planning service area: Forsyth County."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            }
+          ]
+        },
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Initial Filing Review",
+          "dateLine": "Submitted Jun 12, 2024 · Decision Nov 1, 2024",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Receipt",
+              "tip": {
+                "title": "1a · Application Submitted",
+                "status": "complete",
+                "rows": [
+                  "Submitted Jun 12, 2024.",
+                  "Filing fee paid · 120-day review clock started."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Batching",
+              "tip": {
+                "title": "1b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Batching window opened Jun 22, 2024.",
+                  "Reviewed against competing applications in the same planning service area, if any."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Public Notice",
+              "tip": {
+                "title": "1c · Public Comment / Opposition",
+                "status": "complete",
+                "rows": [
+                  "Notice period opened Jul 2, 2024.",
+                  "Affected persons may file comments or notice of opposition."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1d",
+              "label": "Agency Decision",
+              "tip": {
+                "title": "1d · Desk Decision",
+                "status": "denied",
+                "rows": [
+                  "Issued Nov 1, 2024 — DENIED.",
+                  "DCH Office of Health Planning project officer of record."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "approved",
+              "label": "Approved",
+              "status": "not-taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            },
+            {
+              "key": "conditions",
+              "label": "Approved with Conditions",
+              "status": "not-taken",
+              "title": "Conditions may include bed limits, service restrictions, or compliance reporting"
+            },
+            {
+              "key": "denied",
+              "label": "Denied",
+              "status": "taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "Initial Decision Challenge",
+          "dateLine": "Challenge window closed",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "2a · Challenge Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Nov 15, 2024 (within 30 days of the letter of determination).",
+                  "Any aggrieved party who timely intervened may request review."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Challenge Registered",
+              "tip": {
+                "title": "2b · Challenge Registered",
+                "status": "complete",
+                "rows": [
+                  "Docketed by DCH Office of Health Planning.",
+                  "Timeliness and standing screened before assignment to a hearing officer."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge filed → proceeds",
+              "status": "taken",
+              "title": "Proceeds to Stage 3 (Administrative Appeal)"
+            },
+            {
+              "key": "nochallenge",
+              "label": "No challenge filed",
+              "status": "not-taken",
+              "title": "Desk decision becomes final — no further review"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Administrative Appeal",
+          "dateLine": "Hearing Mar 24, 2025 · Decision Apr 21, 2025",
+          "substeps": [
+            {
+              "code": "3a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "3a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed Dec 15, 2024 (within 30 days of the challenge).",
+                  "Assigned by the Office of State Administrative Hearings."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "3b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held Dec 24, 2024.",
+                  "Hearing dates and discovery deadlines set."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "3c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after appointment.",
+                  "Hearing dates: Mar 24, 2025."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "3d",
+              "label": "Hearing",
+              "tip": {
+                "title": "3d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidentiary hearing on need, financial feasibility, and access criteria.",
+                  "Parties: DCH, applicant, and any intervening competing applicant."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "3e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "3e · Hearing Officer Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Apr 21, 2025 — Affirmed denial."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "4",
+          "status": "complete",
+          "title": "Final Agency Decision",
+          "dateLine": "Effective Apr 21, 2025",
+          "regimeNote": {
+            "current": {
+              "label": "Reformed Regime (HB 1339)",
+              "tag": "current",
+              "detail": "Hearing officer decision = final agency decision. Effective 2024 · No Commissioner review."
+            },
+            "legacy": {
+              "label": "Prior Regime (Pre-2024)",
+              "tag": "legacy",
+              "detail": "Optional Commissioner review · 61-day finality window."
+            }
+          }
+        },
+        {
+          "n": "5",
+          "status": "complete",
+          "title": "Judicial Review",
+          "dateLine": "Petition within 30 days of final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Petition Filed",
+              "tip": {
+                "title": "5a · Petition for Judicial Review",
+                "status": "complete",
+                "rows": [
+                  "Must file within 30 days of the final agency decision.",
+                  "Any party except DCH may petition · Venue: Superior Court."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Record Transmittal",
+              "tip": {
+                "title": "5b · Record Transmittal",
+                "status": "complete",
+                "rows": [
+                  "DCH must transmit the certified record and transcript within 30 days of notice of appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Hearing on Record",
+              "tip": {
+                "title": "5c · Hearing on the Record",
+                "status": "complete",
+                "rows": [
+                  "Review confined to the administrative record — no new evidence.",
+                  "Deferential, substantial-evidence standard."
+                ],
+                "statute": "O.C.G.A. § 50-13-19"
+              }
+            },
+            {
+              "code": "5d",
+              "label": "Disposition",
+              "tip": {
+                "title": "5d · Superior Court Disposition",
+                "status": "complete",
+                "rows": [
+                  "Branch: Affirm / Reverse / Remand.",
+                  "120-day default rule: if the court does not hear within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            }
+          ]
+        },
+        {
+          "n": "6",
+          "status": "complete",
+          "title": "Appellate Review",
+          "dateLine": "Upon Superior Court disposition",
+          "substeps": [
+            {
+              "code": "6a",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "6a · Court of Appeals",
+                "status": "complete",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "6b",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "6b · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review.",
+                  "Petition for cert. granted or denied."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        },
+        {
+          "n": "7",
+          "status": "complete",
+          "title": "Terminal Outcomes",
+          "dateLine": "Record closed Nov 1, 2024",
+          "terminal": [
+            {
+              "key": "approved",
+              "label": "Approved & Conditions Pending",
+              "status": "not-taken"
+            },
+            {
+              "key": "constructed",
+              "label": "Constructed & Licensed",
+              "status": "not-taken"
+            },
+            {
+              "key": "unbuilt",
+              "label": "Unbuilt / Lapsed CON",
+              "status": "taken"
+            },
+            {
+              "key": "remanded",
+              "label": "Remanded",
+              "status": "not-taken"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "con_withdrawn": {
+    "rec": {
+      "type": "CON",
+      "num": "CON2026099",
+      "facility": "Example Home Health",
+      "received": "1/1/2026",
+      "date": "3/1/2026",
+      "finding": "Withdrawn",
+      "county": "Cobb"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "CON",
+        "color": "#F43F5E"
+      },
+      "isClosed": true,
+      "isActive": false,
+      "filedLine": "Filed Jan 1, 2026",
+      "closedLine": "Closed Mar 1, 2026",
+      "durationLine": "2 months",
+      "finalDisposition": "CON Withdrawn — Effective Mar 1, 2026",
+      "precedent": {
+        "key": "overturned",
+        "label": "OVERTURNED",
+        "color": "#F43F5E",
+        "bg": "rgba(244,63,94,0.12)",
+        "detail": "Reversed or overruled on appeal · Exercise caution citing"
+      },
+      "compact": [
+        {
+          "code": "Intent",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Initial",
+          "status": "complete",
+          "tag": null
+        },
+        {
+          "code": "Admin",
+          "status": "complete"
+        },
+        {
+          "code": "Agency",
+          "status": "complete"
+        },
+        {
+          "code": "Superior",
+          "status": "complete"
+        },
+        {
+          "code": "Appellate",
+          "status": "complete"
+        },
+        {
+          "code": "Final",
+          "status": "complete"
+        }
+      ],
+      "stages": [
+        {
+          "n": "0",
+          "status": "complete",
+          "title": "Letter of Intent",
+          "dateLine": "Filed Jan 1, 2026",
+          "substeps": [
+            {
+              "code": "0a",
+              "label": "Submission",
+              "tip": {
+                "title": "0a · Submission",
+                "status": "complete",
+                "rows": [
+                  "Letter of intent filed Jan 1, 2026.",
+                  "Required pre-application filing — sets review cycle and batching window."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            },
+            {
+              "code": "0b",
+              "label": "Acknowledgement",
+              "tip": {
+                "title": "0b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Acknowledged Jan 4, 2026.",
+                  "Planning service area: Cobb County."
+                ],
+                "statute": "O.C.G.A. § 31-6-40"
+              }
+            }
+          ]
+        },
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Initial Filing Review",
+          "dateLine": "Submitted Jan 1, 2026 · Decision Mar 1, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Receipt",
+              "tip": {
+                "title": "1a · Application Submitted",
+                "status": "complete",
+                "rows": [
+                  "Submitted Jan 1, 2026.",
+                  "Filing fee paid · 120-day review clock started."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Batching",
+              "tip": {
+                "title": "1b · Review Cycle / Batching",
+                "status": "complete",
+                "rows": [
+                  "Batching window opened Jan 11, 2026.",
+                  "Reviewed against competing applications in the same planning service area, if any."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Public Notice",
+              "tip": {
+                "title": "1c · Public Comment / Opposition",
+                "status": "complete",
+                "rows": [
+                  "Notice period opened Jan 21, 2026.",
+                  "Affected persons may file comments or notice of opposition."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            },
+            {
+              "code": "1d",
+              "label": "Agency Decision",
+              "tip": {
+                "title": "1d · Desk Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Mar 1, 2026 — WITHDRAWN.",
+                  "DCH Office of Health Planning project officer of record."
+                ],
+                "statute": "O.C.G.A. § 31-6-43"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "approved",
+              "label": "Approved",
+              "status": "taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            },
+            {
+              "key": "conditions",
+              "label": "Approved with Conditions",
+              "status": "not-taken",
+              "title": "Conditions may include bed limits, service restrictions, or compliance reporting"
+            },
+            {
+              "key": "denied",
+              "label": "Denied",
+              "status": "not-taken",
+              "title": "Proceeds to Stage 2 (challenge window)"
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "Initial Decision Challenge",
+          "dateLine": "Challenge window closed",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "2a · Challenge Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Mar 15, 2026 (within 30 days of the letter of determination).",
+                  "Any aggrieved party who timely intervened may request review."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Challenge Registered",
+              "tip": {
+                "title": "2b · Challenge Registered",
+                "status": "complete",
+                "rows": [
+                  "Docketed by DCH Office of Health Planning.",
+                  "Timeliness and standing screened before assignment to a hearing officer."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(a)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge filed → proceeds",
+              "status": "taken",
+              "title": "Proceeds to Stage 3 (Administrative Appeal)"
+            },
+            {
+              "key": "nochallenge",
+              "label": "No challenge filed",
+              "status": "not-taken",
+              "title": "Desk decision becomes final — no further review"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Administrative Appeal",
+          "dateLine": "Hearing Jul 22, 2026 · Decision Aug 19, 2026",
+          "substeps": [
+            {
+              "code": "3a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "3a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed Apr 14, 2026 (within 30 days of the challenge).",
+                  "Assigned by the Office of State Administrative Hearings."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "3b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held Apr 23, 2026.",
+                  "Hearing dates and discovery deadlines set."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "3c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "3c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after appointment.",
+                  "Hearing dates: Jul 22, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "3d",
+              "label": "Hearing",
+              "tip": {
+                "title": "3d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidentiary hearing on need, financial feasibility, and access criteria.",
+                  "Parties: DCH, applicant, and any intervening competing applicant."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "3e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "3e · Hearing Officer Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Aug 19, 2026 — Affirmed approval."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "4",
+          "status": "complete",
+          "title": "Final Agency Decision",
+          "dateLine": "Effective Aug 19, 2026",
+          "regimeNote": {
+            "current": {
+              "label": "Reformed Regime (HB 1339)",
+              "tag": "current",
+              "detail": "Hearing officer decision = final agency decision. Effective 2024 · No Commissioner review."
+            },
+            "legacy": {
+              "label": "Prior Regime (Pre-2024)",
+              "tag": "legacy",
+              "detail": "Optional Commissioner review · 61-day finality window."
+            }
+          }
+        },
+        {
+          "n": "5",
+          "status": "complete",
+          "title": "Judicial Review",
+          "dateLine": "Petition within 30 days of final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Petition Filed",
+              "tip": {
+                "title": "5a · Petition for Judicial Review",
+                "status": "complete",
+                "rows": [
+                  "Must file within 30 days of the final agency decision.",
+                  "Any party except DCH may petition · Venue: Superior Court."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Record Transmittal",
+              "tip": {
+                "title": "5b · Record Transmittal",
+                "status": "complete",
+                "rows": [
+                  "DCH must transmit the certified record and transcript within 30 days of notice of appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Hearing on Record",
+              "tip": {
+                "title": "5c · Hearing on the Record",
+                "status": "complete",
+                "rows": [
+                  "Review confined to the administrative record — no new evidence.",
+                  "Deferential, substantial-evidence standard."
+                ],
+                "statute": "O.C.G.A. § 50-13-19"
+              }
+            },
+            {
+              "code": "5d",
+              "label": "Disposition",
+              "tip": {
+                "title": "5d · Superior Court Disposition",
+                "status": "complete",
+                "rows": [
+                  "Branch: Affirm / Reverse / Remand.",
+                  "120-day default rule: if the court does not hear within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 31-6-44.1"
+              }
+            }
+          ]
+        },
+        {
+          "n": "6",
+          "status": "complete",
+          "title": "Appellate Review",
+          "dateLine": "Upon Superior Court disposition",
+          "substeps": [
+            {
+              "code": "6a",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "6a · Court of Appeals",
+                "status": "complete",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "6b",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "6b · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review.",
+                  "Petition for cert. granted or denied."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        },
+        {
+          "n": "7",
+          "status": "complete",
+          "title": "Terminal Outcomes",
+          "dateLine": "Record closed Mar 1, 2026",
+          "terminal": [
+            {
+              "key": "approved",
+              "label": "Approved & Conditions Pending",
+              "status": "not-taken"
+            },
+            {
+              "key": "constructed",
+              "label": "Constructed & Licensed",
+              "status": "not-taken"
+            },
+            {
+              "key": "unbuilt",
+              "label": "Withdrawn",
+              "status": "taken"
+            },
+            {
+              "key": "remanded",
+              "label": "Remanded",
+              "status": "not-taken"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "det_pending": {
+    "rec": {
+      "type": "DET",
+      "num": "DET2026005",
+      "facility": "Emory University Hospital",
+      "received": "3/14/2026",
+      "date": null,
+      "finding": "Pending",
+      "county": "DeKalb"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "DET",
+        "color": "#F59E0B"
+      },
+      "subtypeLabel": "DET (Generic)",
+      "subtypeSub": "Determination of Reviewability",
+      "isClosed": false,
+      "isActive": true,
+      "filedLine": "Filed Mar 14, 2026",
+      "closedLine": null,
+      "durationLine": null,
+      "finalDisposition": null,
+      "precedent": null,
+      "compact": [
+        {
+          "code": "Submit",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Finality",
+          "status": "complete"
+        },
+        {
+          "code": "Appeal",
+          "status": "active"
+        },
+        {
+          "code": "Judicial",
+          "status": "pending"
+        }
+      ],
+      "stages": [
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Request Submission",
+          "dateLine": "Filed Mar 14, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "1a · Request Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Mar 14, 2026.",
+                  "Request on DCH form + filing fee · Subject: substantial equivalent of a new institutional health service.",
+                  "No letter of intent required · no review cycle or batching."
+                ],
+                "statute": "O.C.G.A. § 31-6-43(e)"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Subject Defined",
+              "tip": {
+                "title": "1b · Subject Defined",
+                "status": "complete",
+                "rows": [
+                  "Request on DCH form + filing fee · Subject: substantial equivalent of a new institutional health service.",
+                  "Classification sought: substantial equivalent of a new institutional health service."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Sufficiency Screen",
+              "tip": {
+                "title": "1c · Sufficiency Screen",
+                "status": "complete",
+                "rows": [
+                  "DCH administrative review of submitted information.",
+                  "Sufficiency confirmed Mar 25, 2026 · ~60-day review window begins."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "DCH Review & Letter Issued",
+          "dateLine": "Due ~60 days from filing",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Reviewability Test",
+              "tip": {
+                "title": "2a · Reviewability Test",
+                "status": "complete",
+                "rows": [
+                  "Is this a new institutional health service? Outcomes: Reviewable / Not Reviewable / Conditioned."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Letter Issued",
+              "tip": {
+                "title": "2b · Letter of Determination Issued",
+                "status": "pending",
+                "rows": [
+                  "Due by Apr 28, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "notreviewable",
+              "label": "Not Reviewable",
+              "status": "not-taken",
+              "title": "May proceed without CON"
+            },
+            {
+              "key": "conditioned",
+              "label": "Conditioned / Partial",
+              "status": "not-taken",
+              "title": "Some components reviewable, others not"
+            },
+            {
+              "key": "reviewable",
+              "label": "Reviewable — CON Required",
+              "status": "not-taken",
+              "title": "CON Required"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Finality or Challenge",
+          "dateLine": "Opens on letter issuance · 30-day window",
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge Filed → Administrative Appeal",
+              "status": "taken",
+              "title": "Filed May 12, 2026 · proceeds to Stage 4"
+            },
+            {
+              "key": "final",
+              "label": "No Challenge Filed",
+              "status": "not-taken",
+              "title": "Letter becomes final without further review — most DETs end here"
+            }
+          ],
+          "deadline": null
+        },
+        {
+          "n": "4",
+          "status": "active",
+          "title": "Administrative Appeal",
+          "dateLine": "Identical mechanics to CON administrative appeal — HB 1339: HO decision = final agency decision",
+          "substeps": [
+            {
+              "code": "4a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "4a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed Jun 11, 2026 (within 30 days of appeal filing).",
+                  "Same mechanics as CON administrative appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "4b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held Jun 20, 2026 (within 14 days of appointment)."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "4c · Hearing Window",
+                "status": "active",
+                "rows": [
+                  "Window: 60–120 days after filing.",
+                  "Hearing set Aug 19, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "4d",
+              "label": "Hearing",
+              "tip": {
+                "title": "4d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidence, witnesses, and reviewability-criteria arguments.",
+                  "Same format as CON hearing."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "4e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "4e · Hearing Officer Decision",
+                "status": "pending",
+                "rows": [
+                  "Due within 30 days of hearing conclusion."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "5",
+          "status": "pending",
+          "title": "Judicial & Appellate",
+          "dateLine": "Upon final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Superior Court",
+              "tip": {
+                "title": "5 · Superior Court Petition",
+                "status": "pending",
+                "rows": [
+                  "Any party except DCH may petition within 30 days of the final agency decision.",
+                  "Review on the administrative record — deferential standard.",
+                  "120-day default: if no hearing within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 50-13-19, as modified by § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "5 · Court of Appeals",
+                "status": "pending",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "5 · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "deteqt_pending": {
+    "rec": {
+      "type": "DET-EQT",
+      "num": "DET-EQT2026060",
+      "facility": "Piedmont Henry",
+      "received": "4/14/2026",
+      "date": null,
+      "finding": "Pending",
+      "county": "Henry"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "DET·EQT",
+        "color": "#8B5CF6"
+      },
+      "subtypeLabel": "DET-EQT",
+      "subtypeSub": "Equipment Threshold Determination",
+      "isClosed": false,
+      "isActive": true,
+      "filedLine": "Filed Apr 14, 2026",
+      "closedLine": null,
+      "durationLine": null,
+      "finalDisposition": null,
+      "precedent": null,
+      "compact": [
+        {
+          "code": "Submit",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Finality",
+          "status": "active"
+        },
+        {
+          "code": "Appeal",
+          "status": "pending"
+        },
+        {
+          "code": "Judicial",
+          "status": "pending"
+        }
+      ],
+      "stages": [
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Request Submission",
+          "dateLine": "Filed Apr 14, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "1a · Request Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Apr 14, 2026.",
+                  "Subject: purchase or lease of diagnostic or therapeutic equipment.",
+                  "No letter of intent required · no review cycle or batching."
+                ],
+                "statute": "O.C.G.A. § 31-6-43(e)"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Subject Defined",
+              "tip": {
+                "title": "1b · Subject Defined",
+                "status": "complete",
+                "rows": [
+                  "Subject: purchase or lease of diagnostic or therapeutic equipment.",
+                  "Classification sought: substantial equivalent of a new institutional health service."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Sufficiency Screen",
+              "tip": {
+                "title": "1c · Sufficiency Screen",
+                "status": "complete",
+                "rows": [
+                  "DCH administrative review of submitted information.",
+                  "Sufficiency confirmed Apr 25, 2026 · ~60-day review window begins."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "DCH Review & Letter Issued",
+          "dateLine": "Due ~60 days from filing",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Reviewability Test",
+              "tip": {
+                "title": "2a · Reviewability Test",
+                "status": "complete",
+                "rows": [
+                  "HB 1339 (current): no dollar threshold — test is the new-service definition. Legacy: expenditure threshold test."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Letter Issued",
+              "tip": {
+                "title": "2b · Letter of Determination Issued",
+                "status": "pending",
+                "rows": [
+                  "Due by May 29, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "notreviewable",
+              "label": "Not Reviewable",
+              "status": "not-taken",
+              "title": "May proceed without CON"
+            },
+            {
+              "key": "conditioned",
+              "label": "Conditioned / Partial",
+              "status": "not-taken",
+              "title": "Some components reviewable, others not"
+            },
+            {
+              "key": "reviewable",
+              "label": "Reviewable — CON Required",
+              "status": "not-taken",
+              "title": "Reviewable"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "active",
+          "title": "Finality or Challenge",
+          "dateLine": "Opens on letter issuance · 30-day window",
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge Filed → Administrative Appeal",
+              "status": "taken",
+              "title": "Filed Jun 12, 2026 · proceeds to Stage 4"
+            },
+            {
+              "key": "final",
+              "label": "No Challenge Filed",
+              "status": "not-taken",
+              "title": "Letter becomes final without further review — most DETs end here"
+            }
+          ],
+          "deadline": {
+            "items": [
+              "Hearing officer appointment due within 30 days of challenge",
+              "Hearing window: 60–120 days after appointment"
+            ]
+          }
+        },
+        {
+          "n": "4",
+          "status": "pending",
+          "title": "Administrative Appeal",
+          "dateLine": "Identical mechanics to CON administrative appeal — HB 1339: HO decision = final agency decision",
+          "substeps": [
+            {
+              "code": "4a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "4a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed Jul 12, 2026 (within 30 days of appeal filing).",
+                  "Same mechanics as CON administrative appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "4b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held Jul 21, 2026 (within 14 days of appointment)."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "4c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after filing.",
+                  "Hearing set Sep 19, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "4d",
+              "label": "Hearing",
+              "tip": {
+                "title": "4d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidence, witnesses, and reviewability-criteria arguments.",
+                  "Same format as CON hearing."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "4e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "4e · Hearing Officer Decision",
+                "status": "pending",
+                "rows": [
+                  "Due within 30 days of hearing conclusion."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "5",
+          "status": "pending",
+          "title": "Judicial & Appellate",
+          "dateLine": "Upon final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Superior Court",
+              "tip": {
+                "title": "5 · Superior Court Petition",
+                "status": "pending",
+                "rows": [
+                  "Any party except DCH may petition within 30 days of the final agency decision.",
+                  "Review on the administrative record — deferential standard.",
+                  "120-day default: if no hearing within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 50-13-19, as modified by § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "5 · Court of Appeals",
+                "status": "pending",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "5 · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "deteqt_approved": {
+    "rec": {
+      "type": "DET-EQT",
+      "num": "DET-EQT2026004",
+      "facility": "Wellstar Douglas",
+      "received": "2/28/2026",
+      "date": "4/4/2026",
+      "finding": "Approved",
+      "county": "Douglas"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "DET·EQT",
+        "color": "#8B5CF6"
+      },
+      "subtypeLabel": "DET-EQT",
+      "subtypeSub": "Equipment Threshold Determination",
+      "isClosed": true,
+      "isActive": false,
+      "filedLine": "Filed Feb 28, 2026",
+      "closedLine": "Closed Apr 4, 2026",
+      "durationLine": "1 month",
+      "finalDisposition": "Equipment Threshold Determination — Approved · Apr 4, 2026",
+      "precedent": {
+        "key": "noprecedent",
+        "label": "NO PRECEDENT",
+        "color": "#94A3B8",
+        "bg": "rgba(148,163,184,0.10)",
+        "detail": "DET types bind parties and stated facts only — O.C.G.A. § 31-6-44 — may not be cited as authority for non-parties"
+      },
+      "compact": [
+        {
+          "code": "Submit",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Finality",
+          "status": "complete"
+        },
+        {
+          "code": "Appeal",
+          "status": "complete"
+        },
+        {
+          "code": "Judicial",
+          "status": "complete"
+        }
+      ],
+      "stages": [
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Request Submission",
+          "dateLine": "Filed Feb 28, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "1a · Request Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Feb 28, 2026.",
+                  "Subject: purchase or lease of diagnostic or therapeutic equipment.",
+                  "No letter of intent required · no review cycle or batching."
+                ],
+                "statute": "O.C.G.A. § 31-6-43(e)"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Subject Defined",
+              "tip": {
+                "title": "1b · Subject Defined",
+                "status": "complete",
+                "rows": [
+                  "Subject: purchase or lease of diagnostic or therapeutic equipment.",
+                  "Classification sought: substantial equivalent of a new institutional health service."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Sufficiency Screen",
+              "tip": {
+                "title": "1c · Sufficiency Screen",
+                "status": "complete",
+                "rows": [
+                  "DCH administrative review of submitted information.",
+                  "Sufficiency confirmed Mar 11, 2026 · ~60-day review window begins."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "DCH Review & Letter Issued",
+          "dateLine": "Letter issued Apr 4, 2026",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Reviewability Test",
+              "tip": {
+                "title": "2a · Reviewability Test",
+                "status": "complete",
+                "rows": [
+                  "HB 1339 (current): no dollar threshold — test is the new-service definition. Legacy: expenditure threshold test."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Letter Issued",
+              "tip": {
+                "title": "2b · Letter of Determination Issued",
+                "status": "complete",
+                "rows": [
+                  "Issued Apr 4, 2026 · Outcome: APPROVED.",
+                  "Anti-fragmentation: DCH aggregates component costs · era-sensitive — check docket date"
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "notreviewable",
+              "label": "Not Reviewable",
+              "status": "not-taken",
+              "title": "May proceed without CON"
+            },
+            {
+              "key": "conditioned",
+              "label": "Conditioned / Partial",
+              "status": "not-taken",
+              "title": "Some components reviewable, others not"
+            },
+            {
+              "key": "reviewable",
+              "label": "Reviewable — CON Required",
+              "status": "taken",
+              "title": "Reviewable"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Finality or Challenge",
+          "dateLine": "Challenge window closed",
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge Filed → Administrative Appeal",
+              "status": "taken",
+              "title": "Filed Apr 18, 2026 · proceeds to Stage 4"
+            },
+            {
+              "key": "final",
+              "label": "No Challenge Filed",
+              "status": "not-taken",
+              "title": "Letter becomes final without further review — most DETs end here"
+            }
+          ],
+          "deadline": null
+        },
+        {
+          "n": "4",
+          "status": "complete",
+          "title": "Administrative Appeal",
+          "dateLine": "Identical mechanics to CON administrative appeal — HB 1339: HO decision = final agency decision",
+          "substeps": [
+            {
+              "code": "4a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "4a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed May 18, 2026 (within 30 days of appeal filing).",
+                  "Same mechanics as CON administrative appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "4b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held May 27, 2026 (within 14 days of appointment)."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "4c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after filing.",
+                  "Hearing set Jul 26, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "4d",
+              "label": "Hearing",
+              "tip": {
+                "title": "4d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidence, witnesses, and reviewability-criteria arguments.",
+                  "Same format as CON hearing."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "4e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "4e · Hearing Officer Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Aug 23, 2026.",
+                  "Under HB 1339 (eff. 2024): HO decision = final agency decision."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "5",
+          "status": "complete",
+          "title": "Judicial & Appellate",
+          "dateLine": "Upon final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Superior Court",
+              "tip": {
+                "title": "5 · Superior Court Petition",
+                "status": "complete",
+                "rows": [
+                  "Any party except DCH may petition within 30 days of the final agency decision.",
+                  "Review on the administrative record — deferential standard.",
+                  "120-day default: if no hearing within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 50-13-19, as modified by § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "5 · Court of Appeals",
+                "status": "pending",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "5 · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "detasc_issued": {
+    "rec": {
+      "type": "DET-ASC",
+      "num": "DET-ASC2026001",
+      "facility": "Summit Spine",
+      "received": "1/10/2026",
+      "date": "2/20/2026",
+      "finding": "Issued",
+      "county": "Fulton"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "DET·ASC",
+        "color": "#10B981"
+      },
+      "subtypeLabel": "DET-ASC",
+      "subtypeSub": "ASC Letter of Non-Reviewability",
+      "isClosed": true,
+      "isActive": false,
+      "filedLine": "Filed Jan 10, 2026",
+      "closedLine": "Closed Feb 20, 2026",
+      "durationLine": "1 month",
+      "finalDisposition": "ASC Letter of Non-Reviewability — Issued · Feb 20, 2026",
+      "precedent": {
+        "key": "noprecedent",
+        "label": "NO PRECEDENT",
+        "color": "#94A3B8",
+        "bg": "rgba(148,163,184,0.10)",
+        "detail": "DET types bind parties and stated facts only — O.C.G.A. § 31-6-44 — may not be cited as authority for non-parties"
+      },
+      "compact": [
+        {
+          "code": "Submit",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Finality",
+          "status": "complete"
+        },
+        {
+          "code": "Appeal",
+          "status": "complete"
+        },
+        {
+          "code": "Judicial",
+          "status": "complete"
+        }
+      ],
+      "stages": [
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Request Submission",
+          "dateLine": "Filed Jan 10, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "1a · Request Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Jan 10, 2026.",
+                  "$500 filing fee · Subject: proposed ambulatory surgery center operation.",
+                  "No letter of intent required · no review cycle or batching."
+                ],
+                "statute": "O.C.G.A. § 31-6-43(e)"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Subject Defined",
+              "tip": {
+                "title": "1b · Subject Defined",
+                "status": "complete",
+                "rows": [
+                  "$500 filing fee · Subject: proposed ambulatory surgery center operation.",
+                  "Classification sought: substantial equivalent of a new institutional health service."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Sufficiency Screen",
+              "tip": {
+                "title": "1c · Sufficiency Screen",
+                "status": "complete",
+                "rows": [
+                  "DCH administrative review of submitted information.",
+                  "Sufficiency confirmed Jan 21, 2026 · ~60-day review window begins."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "DCH Review & Letter Issued",
+          "dateLine": "Letter issued Feb 20, 2026",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Reviewability Test",
+              "tip": {
+                "title": "2a · Reviewability Test",
+                "status": "complete",
+                "rows": [
+                  "Does the ASC qualify as single-specialty or a qualifying joint venture? Outcomes: LNR issued / CON required."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Letter Issued",
+              "tip": {
+                "title": "2b · Letter of Determination Issued",
+                "status": "complete",
+                "rows": [
+                  "Issued Feb 20, 2026 · Outcome: ISSUED.",
+                  "Letter of Non-Reviewability (LNR)"
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "notreviewable",
+              "label": "Not Reviewable",
+              "status": "taken",
+              "title": "May proceed without CON"
+            },
+            {
+              "key": "conditioned",
+              "label": "Conditioned / Partial",
+              "status": "not-taken",
+              "title": "Some components reviewable, others not"
+            },
+            {
+              "key": "reviewable",
+              "label": "Reviewable — CON Required",
+              "status": "not-taken",
+              "title": "LNR Issued"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Finality or Challenge",
+          "dateLine": "Challenge window closed",
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge Filed → Administrative Appeal",
+              "status": "taken",
+              "title": "Filed Mar 6, 2026 · proceeds to Stage 4"
+            },
+            {
+              "key": "final",
+              "label": "No Challenge Filed",
+              "status": "not-taken",
+              "title": "Letter becomes final without further review — most DETs end here"
+            }
+          ],
+          "deadline": null
+        },
+        {
+          "n": "4",
+          "status": "complete",
+          "title": "Administrative Appeal",
+          "dateLine": "Identical mechanics to CON administrative appeal — HB 1339: HO decision = final agency decision",
+          "substeps": [
+            {
+              "code": "4a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "4a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed Apr 5, 2026 (within 30 days of appeal filing).",
+                  "Same mechanics as CON administrative appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "4b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held Apr 14, 2026 (within 14 days of appointment)."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "4c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after filing.",
+                  "Hearing set Jun 13, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "4d",
+              "label": "Hearing",
+              "tip": {
+                "title": "4d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidence, witnesses, and reviewability-criteria arguments.",
+                  "Same format as CON hearing."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "4e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "4e · Hearing Officer Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Jul 11, 2026.",
+                  "Under HB 1339 (eff. 2024): HO decision = final agency decision."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "5",
+          "status": "complete",
+          "title": "Judicial & Appellate",
+          "dateLine": "Upon final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Superior Court",
+              "tip": {
+                "title": "5 · Superior Court Petition",
+                "status": "complete",
+                "rows": [
+                  "Any party except DCH may petition within 30 days of the final agency decision.",
+                  "Review on the administrative record — deferential standard.",
+                  "120-day default: if no hearing within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 50-13-19, as modified by § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "5 · Court of Appeals",
+                "status": "pending",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "5 · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "lnreqt_issued": {
+    "rec": {
+      "type": "LNR-EQT",
+      "num": "LNR-EQT2026009",
+      "facility": "Example EQT",
+      "received": "2/1/2026",
+      "date": "3/15/2026",
+      "finding": "Issued",
+      "county": "Cobb"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "LNR·EQT",
+        "color": "#8B5CF6"
+      },
+      "subtypeLabel": "LNR-EQT",
+      "subtypeSub": "Letter of Non-Reviewability — Equipment",
+      "isClosed": true,
+      "isActive": false,
+      "filedLine": "Filed Feb 1, 2026",
+      "closedLine": "Closed Mar 15, 2026",
+      "durationLine": "1 month",
+      "finalDisposition": "Letter of Non-Reviewability — Equipment — Issued · Mar 15, 2026",
+      "precedent": {
+        "key": "noprecedent",
+        "label": "NO PRECEDENT",
+        "color": "#94A3B8",
+        "bg": "rgba(148,163,184,0.10)",
+        "detail": "DET types bind parties and stated facts only — O.C.G.A. § 31-6-44 — may not be cited as authority for non-parties"
+      },
+      "compact": [
+        {
+          "code": "Submit",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Finality",
+          "status": "complete"
+        },
+        {
+          "code": "Appeal",
+          "status": "complete"
+        },
+        {
+          "code": "Judicial",
+          "status": "complete"
+        }
+      ],
+      "stages": [
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Request Submission",
+          "dateLine": "Filed Feb 1, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "1a · Request Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Feb 1, 2026.",
+                  "Subject: activity claimed exempt or outside the new-service definition.",
+                  "No letter of intent required · no review cycle or batching."
+                ],
+                "statute": "O.C.G.A. § 31-6-43(e)"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Subject Defined",
+              "tip": {
+                "title": "1b · Subject Defined",
+                "status": "complete",
+                "rows": [
+                  "Subject: activity claimed exempt or outside the new-service definition.",
+                  "Classification sought: substantial equivalent of a new institutional health service."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Sufficiency Screen",
+              "tip": {
+                "title": "1c · Sufficiency Screen",
+                "status": "complete",
+                "rows": [
+                  "DCH administrative review of submitted information.",
+                  "Sufficiency confirmed Feb 12, 2026 · ~60-day review window begins."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "DCH Review & Letter Issued",
+          "dateLine": "Letter issued Mar 15, 2026",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Reviewability Test",
+              "tip": {
+                "title": "2a · Reviewability Test",
+                "status": "complete",
+                "rows": [
+                  "Does the activity fall within a statutory exemption or outside the new-service definition? Outcomes: LNR issued / CON required."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Letter Issued",
+              "tip": {
+                "title": "2b · Letter of Determination Issued",
+                "status": "complete",
+                "rows": [
+                  "Issued Mar 15, 2026 · Outcome: ISSUED.",
+                  "LNR may issue with operating conditions · tracking required"
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "notreviewable",
+              "label": "Not Reviewable",
+              "status": "taken",
+              "title": "May proceed without CON"
+            },
+            {
+              "key": "conditioned",
+              "label": "Conditioned / Partial",
+              "status": "not-taken",
+              "title": "Some components reviewable, others not"
+            },
+            {
+              "key": "reviewable",
+              "label": "Reviewable — CON Required",
+              "status": "not-taken",
+              "title": "LNR Issued"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Finality or Challenge",
+          "dateLine": "Challenge window closed",
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge Filed → Administrative Appeal",
+              "status": "taken",
+              "title": "Filed Mar 29, 2026 · proceeds to Stage 4"
+            },
+            {
+              "key": "final",
+              "label": "No Challenge Filed",
+              "status": "not-taken",
+              "title": "Letter becomes final without further review — most DETs end here"
+            }
+          ],
+          "deadline": null
+        },
+        {
+          "n": "4",
+          "status": "complete",
+          "title": "Administrative Appeal",
+          "dateLine": "Identical mechanics to CON administrative appeal — HB 1339: HO decision = final agency decision",
+          "substeps": [
+            {
+              "code": "4a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "4a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed Apr 28, 2026 (within 30 days of appeal filing).",
+                  "Same mechanics as CON administrative appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "4b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held May 7, 2026 (within 14 days of appointment)."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "4c · Hearing Window",
+                "status": "complete",
+                "rows": [
+                  "Window: 60–120 days after filing.",
+                  "Hearing set Jul 6, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "4d",
+              "label": "Hearing",
+              "tip": {
+                "title": "4d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidence, witnesses, and reviewability-criteria arguments.",
+                  "Same format as CON hearing."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "4e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "4e · Hearing Officer Decision",
+                "status": "complete",
+                "rows": [
+                  "Issued Aug 3, 2026.",
+                  "Under HB 1339 (eff. 2024): HO decision = final agency decision."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "5",
+          "status": "complete",
+          "title": "Judicial & Appellate",
+          "dateLine": "Upon final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Superior Court",
+              "tip": {
+                "title": "5 · Superior Court Petition",
+                "status": "complete",
+                "rows": [
+                  "Any party except DCH may petition within 30 days of the final agency decision.",
+                  "Review on the administrative record — deferential standard.",
+                  "120-day default: if no hearing within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 50-13-19, as modified by § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "5 · Court of Appeals",
+                "status": "pending",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "5 · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "lnrasc_pending": {
+    "rec": {
+      "type": "LNR-ASC",
+      "num": "LNR-ASC2026002",
+      "facility": "Example ASC",
+      "received": "2/1/2026",
+      "date": null,
+      "finding": "Pending",
+      "county": "Bibb"
+    },
+    "proceeding": {
+      "badge": {
+        "label": "LNR·ASC",
+        "color": "#10B981"
+      },
+      "subtypeLabel": "LNR-ASC",
+      "subtypeSub": "ASC Letter of Non-Reviewability",
+      "isClosed": false,
+      "isActive": true,
+      "filedLine": "Filed Feb 1, 2026",
+      "closedLine": null,
+      "durationLine": null,
+      "finalDisposition": null,
+      "precedent": null,
+      "compact": [
+        {
+          "code": "Submit",
+          "status": "complete"
+        },
+        {
+          "code": "Review",
+          "status": "complete"
+        },
+        {
+          "code": "Finality",
+          "status": "complete"
+        },
+        {
+          "code": "Appeal",
+          "status": "active"
+        },
+        {
+          "code": "Judicial",
+          "status": "pending"
+        }
+      ],
+      "stages": [
+        {
+          "n": "1",
+          "status": "complete",
+          "title": "Request Submission",
+          "dateLine": "Filed Feb 1, 2026",
+          "substeps": [
+            {
+              "code": "1a",
+              "label": "Request Filed",
+              "tip": {
+                "title": "1a · Request Filed",
+                "status": "complete",
+                "rows": [
+                  "Filed Feb 1, 2026.",
+                  "$500 filing fee · Subject: proposed ambulatory surgery center operation.",
+                  "No letter of intent required · no review cycle or batching."
+                ],
+                "statute": "O.C.G.A. § 31-6-43(e)"
+              }
+            },
+            {
+              "code": "1b",
+              "label": "Subject Defined",
+              "tip": {
+                "title": "1b · Subject Defined",
+                "status": "complete",
+                "rows": [
+                  "$500 filing fee · Subject: proposed ambulatory surgery center operation.",
+                  "Classification sought: substantial equivalent of a new institutional health service."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "1c",
+              "label": "Sufficiency Screen",
+              "tip": {
+                "title": "1c · Sufficiency Screen",
+                "status": "complete",
+                "rows": [
+                  "DCH administrative review of submitted information.",
+                  "Sufficiency confirmed Feb 12, 2026 · ~60-day review window begins."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "2",
+          "status": "complete",
+          "title": "DCH Review & Letter Issued",
+          "dateLine": "Due ~60 days from filing",
+          "substeps": [
+            {
+              "code": "2a",
+              "label": "Reviewability Test",
+              "tip": {
+                "title": "2a · Reviewability Test",
+                "status": "complete",
+                "rows": [
+                  "Does the ASC qualify as single-specialty or a qualifying joint venture? Outcomes: LNR issued / CON required."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            },
+            {
+              "code": "2b",
+              "label": "Letter Issued",
+              "tip": {
+                "title": "2b · Letter of Determination Issued",
+                "status": "pending",
+                "rows": [
+                  "Due by Mar 18, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-2(23)"
+              }
+            }
+          ],
+          "forks": [
+            {
+              "key": "notreviewable",
+              "label": "Not Reviewable",
+              "status": "not-taken",
+              "title": "May proceed without CON"
+            },
+            {
+              "key": "conditioned",
+              "label": "Conditioned / Partial",
+              "status": "not-taken",
+              "title": "Some components reviewable, others not"
+            },
+            {
+              "key": "reviewable",
+              "label": "Reviewable — CON Required",
+              "status": "not-taken",
+              "title": "LNR Issued"
+            }
+          ]
+        },
+        {
+          "n": "3",
+          "status": "complete",
+          "title": "Finality or Challenge",
+          "dateLine": "Opens on letter issuance · 30-day window",
+          "forks": [
+            {
+              "key": "challenge",
+              "label": "Challenge Filed → Administrative Appeal",
+              "status": "taken",
+              "title": "Filed Apr 1, 2026 · proceeds to Stage 4"
+            },
+            {
+              "key": "final",
+              "label": "No Challenge Filed",
+              "status": "not-taken",
+              "title": "Letter becomes final without further review — most DETs end here"
+            }
+          ],
+          "deadline": null
+        },
+        {
+          "n": "4",
+          "status": "active",
+          "title": "Administrative Appeal",
+          "dateLine": "Identical mechanics to CON administrative appeal — HB 1339: HO decision = final agency decision",
+          "substeps": [
+            {
+              "code": "4a",
+              "label": "HO Appointed",
+              "tip": {
+                "title": "4a · Hearing Officer Appointed",
+                "status": "complete",
+                "rows": [
+                  "Appointed May 1, 2026 (within 30 days of appeal filing).",
+                  "Same mechanics as CON administrative appeal."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4b",
+              "label": "Scheduling",
+              "tip": {
+                "title": "4b · Scheduling Conference",
+                "status": "complete",
+                "rows": [
+                  "Held May 10, 2026 (within 14 days of appointment)."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(b)"
+              }
+            },
+            {
+              "code": "4c",
+              "label": "Hearing Window",
+              "tip": {
+                "title": "4c · Hearing Window",
+                "status": "active",
+                "rows": [
+                  "Window: 60–120 days after filing.",
+                  "Hearing set Jul 9, 2026."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(f)"
+              }
+            },
+            {
+              "code": "4d",
+              "label": "Hearing",
+              "tip": {
+                "title": "4d · Contested Case Hearing",
+                "status": "complete",
+                "rows": [
+                  "Evidence, witnesses, and reviewability-criteria arguments.",
+                  "Same format as CON hearing."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            },
+            {
+              "code": "4e",
+              "label": "HO Decision",
+              "tip": {
+                "title": "4e · Hearing Officer Decision",
+                "status": "pending",
+                "rows": [
+                  "Due within 30 days of hearing conclusion."
+                ],
+                "statute": "O.C.G.A. § 31-6-44(e)"
+              }
+            }
+          ]
+        },
+        {
+          "n": "5",
+          "status": "pending",
+          "title": "Judicial & Appellate",
+          "dateLine": "Upon final agency decision",
+          "substeps": [
+            {
+              "code": "5a",
+              "label": "Superior Court",
+              "tip": {
+                "title": "5 · Superior Court Petition",
+                "status": "pending",
+                "rows": [
+                  "Any party except DCH may petition within 30 days of the final agency decision.",
+                  "Review on the administrative record — deferential standard.",
+                  "120-day default: if no hearing within 120 days of docketing, the agency decision is affirmed by operation of law."
+                ],
+                "statute": "O.C.G.A. § 50-13-19, as modified by § 31-6-44.1"
+              }
+            },
+            {
+              "code": "5b",
+              "label": "Court of Appeals",
+              "tip": {
+                "title": "5 · Court of Appeals",
+                "status": "pending",
+                "rows": [
+                  "Either party may appeal the Superior Court order.",
+                  "Branch: Affirm / Reverse / Remand."
+                ],
+                "statute": "O.C.G.A. § 5-6-34"
+              }
+            },
+            {
+              "code": "5c",
+              "label": "Supreme Court",
+              "tip": {
+                "title": "5 · Supreme Court of Georgia",
+                "status": "pending",
+                "rows": [
+                  "By certiorari — discretionary review."
+                ],
+                "statute": "O.C.G.A. § 5-6-15"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

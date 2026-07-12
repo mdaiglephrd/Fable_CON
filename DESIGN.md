@@ -344,3 +344,182 @@ KEY_VAULT_URI           # informational only — code never reads Key Vault dire
   common helpers in the module that owns the boundary.
 - Docket 'FK to Matter': document.docket_id, weekly_report_event.docket_id and
   watchlist.docket_id reference con.matter. Loaders must upsert the matter first.
+
+---
+
+# RESEARCH LAYER (v2) — authoritative contract for the CON Research Console
+
+The console (design handoff in `web/design-reference/`) needs legal *content* on top of the v1
+inventory. This layer is additive: v1 tables/modules/tests are unchanged. Build against the names
+below. Reference data shapes: `tests/fixtures/handoff/con-corpus.js` (cases) and
+`docket-engine.js` (stage engine) — these are the UI's authoritative data contract.
+
+## Schema — research layer (schema `con`; migrations 0006+)
+
+### New controlled-vocabulary tables (seeded in 0007; codes are the exact strings)
+- `con.vocab_treatment(code NVARCHAR(40) PK)`: Followed; Distinguished; Criticized; Reversed; Overruled; Cited; Neutral
+- `con.vocab_docket_family(code NVARCHAR(20) PK)`: CON; DET; DET-EQT; DET-ASC; LNR-ASC; LNR-EQT
+- `con.vocab_event_type(code NVARCHAR(20) PK)`: Filing; Order; Opinion; Hearing; Brief; Notice
+- `con.vocab_counsel_side(code NVARCHAR(20) PK)`: Applicant; Petitioner; Respondent; Appellant; Appellee; Intervenor; Amicus; Agency
+- `con.vocab_treatment_level(code NVARCHAR(20) PK)`: positive; caution; negative; neutral  (good-law banner level)
+
+### Extend existing tables (0006, ALTER … ADD; all new cols NULLable)
+- `con.matter` + : `contact_officer NVARCHAR(200)`, `project_description NVARCHAR(MAX)`,
+  `estimated_cost DECIMAL(18,2)`, `primary_service_area NVARCHAR(MAX) CHECK ISJSON` (JSON array of counties),
+  `docket_family NVARCHAR(20) FK->vocab_docket_family`, `letter_of_intent_date DATE`,
+  `deemed_complete_date DATE`, `decision_deadline DATE`, `batching_cycle NVARCHAR(60)`,
+  `competing_docket_ids NVARCHAR(MAX) CHECK ISJSON`, `precedent_signal NVARCHAR(20)` (valid|questioned|overturned|noprecedent).
+- `con.document` + : `title NVARCHAR(500)`, `text_source NVARCHAR(10)` (ocr|native|tag).
+
+### New content tables (0006)
+```
+con.document_text(entry_id INT PK FK->document, full_text NVARCHAR(MAX), text_source NVARCHAR(10),
+  char_count INT, di_model NVARCHAR(60), di_confidence DECIMAL(5,2), extracted_at DATETIME2 DEFAULT SYSUTCDATETIME())
+con.opinion(entry_id INT PK FK->document, caption_json NVARCHAR(MAX) CHECK ISJSON, tribunal_line NVARCHAR(400),
+  byline NVARCHAR(200), intro_text NVARCHAR(MAX), disposition_json NVARCHAR(MAX) CHECK ISJSON,
+  editorial_synopsis NVARCHAR(MAX), decided_date DATE, argued_date DATE, court_docket_no NVARCHAR(60),
+  subsequent_history NVARCHAR(MAX), is_published BIT, standard_of_review NVARCHAR(200),
+  treatment_level NVARCHAR(20) FK->vocab_treatment_level, treatment_note_json NVARCHAR(MAX) CHECK ISJSON)
+con.opinion_paragraph(paragraph_id BIGINT IDENTITY PK, entry_id INT FK->document, para_num NVARCHAR(10),
+  segs_json NVARCHAR(MAX) CHECK ISJSON, plain_text NVARCHAR(MAX), sort_order INT)   -- segs_json = the tagged-tuple rich-text array
+con.reporter_citation(cite_id BIGINT IDENTITY PK, entry_id INT FK->document, citation NVARCHAR(120),
+  reporter NVARCHAR(40), volume NVARCHAR(20), page NVARCHAR(20), is_parallel BIT DEFAULT 0)
+con.headnote(headnote_id BIGINT IDENTITY PK, entry_id INT FK->document, num NVARCHAR(10),
+  topic_id NVARCHAR(40) FK->con.topic, topic_label NVARCHAR(200), text NVARCHAR(MAX))
+```
+
+### Taxonomy / citator (0006; topic tree seeded 0008)
+```
+con.topic(topic_id NVARCHAR(40) PK, parent_topic_id NVARCHAR(40) NULL FK->con.topic,
+  key_number NVARCHAR(40), title NVARCHAR(200), description NVARCHAR(MAX))   -- e.g. 'vi-24','CON VI · 24','Substantial Evidence'
+con.document_topic(entry_id INT FK->document, topic_id NVARCHAR(40) FK->con.topic, PK(entry_id,topic_id))
+con.citation(citation_id BIGINT IDENTITY PK, citing_entry_id INT FK->document,
+  cited_entry_id INT NULL FK->document, cited_statute_id NVARCHAR(40) NULL FK->con.statute,
+  cited_external NVARCHAR(300) NULL, treatment NVARCHAR(40) NULL FK->vocab_treatment, depth TINYINT NULL,
+  pinpoint NVARCHAR(60), snippet NVARCHAR(MAX), topic_id NVARCHAR(40) NULL FK->con.topic)
+  -- how-cited = WHERE cited_*; table-of-authorities = WHERE citing_entry_id
+```
+
+### People / filings / timeline (0006)
+```
+con.counsel(counsel_id BIGINT IDENTITY PK, entry_id INT NULL FK->document, docket_id NVARCHAR(50) NULL FK->matter,
+  role NVARCHAR(120), attorney_name NVARCHAR(200), firm NVARCHAR(200), party_side NVARCHAR(20) FK->vocab_counsel_side)
+con.brief(brief_id BIGINT IDENTITY PK, docket_id NVARCHAR(50) FK->matter, entry_id INT NULL FK->document,
+  title NVARCHAR(400), party_side NVARCHAR(20) NULL FK->vocab_counsel_side, attorney_name NVARCHAR(200),
+  firm NVARCHAR(200), filed_date DATE, page_count INT)
+con.proceeding_stage(stage_id BIGINT IDENTITY PK, docket_id NVARCHAR(50) FK->matter, stage_num NVARCHAR(10),
+  stage_label NVARCHAR(80), court NVARCHAR(200), title NVARCHAR(300), cite NVARCHAR(200), stage_date DATE,
+  outcome NVARCHAR(60) NULL FK->vocab_outcome, summary NVARCHAR(MAX), filings_count INT, decision_maker NVARCHAR(200),
+  duration_days INT, is_current BIT DEFAULT 0, has_opinion BIT DEFAULT 0, opinion_entry_id INT NULL FK->document,
+  sort_order INT)
+con.docket_event(event_id BIGINT IDENTITY PK, docket_id NVARCHAR(50) FK->matter, event_date DATE,
+  event_type NVARCHAR(20) FK->vocab_event_type, court NVARCHAR(200), description NVARCHAR(MAX),
+  actor NVARCHAR(200), entry_id INT NULL FK->document)
+```
+
+### Statutes (0006; content seeded/loaded separately)
+```
+con.statute(statute_id NVARCHAR(40) PK, kind NVARCHAR(10) CHECK IN ('OCGA','RULE'), citation_label NVARCHAR(200),
+  title NVARCHAR(400), full_text NVARCHAR(MAX), effective_date DATE, regime_note NVARCHAR(MAX),
+  subsections_json NVARCHAR(MAX) CHECK ISJSON)
+con.statute_xref(from_statute_id NVARCHAR(40) FK->con.statute, to_statute_id NVARCHAR(40) FK->con.statute,
+  PK(from_statute_id,to_statute_id))
+```
+
+### Workspace (0006)
+```
+con.wiki_article(article_id NVARCHAR(60) PK, group_name NVARCHAR(120), title NVARCHAR(300),
+  toc_json NVARCHAR(MAX) CHECK ISJSON, body_json NVARCHAR(MAX) CHECK ISJSON, status NVARCHAR(20), updated_at DATETIME2)
+con.wiki_revision(revision_id BIGINT IDENTITY PK, article_id NVARCHAR(60) FK->con.wiki_article, author NVARCHAR(200),
+  submitted_at DATETIME2 DEFAULT SYSUTCDATETIME(), status NVARCHAR(20) CHECK IN ('pending','approved','rejected'),
+  diff_json NVARCHAR(MAX) CHECK ISJSON)
+con.research_project(project_id NVARCHAR(60) PK, owner_upn NVARCHAR(200), name NVARCHAR(300), description NVARCHAR(MAX),
+  tags_json NVARCHAR(MAX) CHECK ISJSON, status NVARCHAR(20) DEFAULT 'open', created_at DATETIME2 DEFAULT SYSUTCDATETIME())
+con.project_item(item_id BIGINT IDENTITY PK, project_id NVARCHAR(60) FK->con.research_project,
+  entry_id INT NULL FK->document, docket_id NVARCHAR(50) NULL FK->matter, flagged BIT DEFAULT 0, note NVARCHAR(MAX))
+con.saved_alert(alert_id NVARCHAR(60) PK, owner_upn NVARCHAR(200), name NVARCHAR(300), query_json NVARCHAR(MAX) CHECK ISJSON,
+  scope NVARCHAR(20), frequency NVARCHAR(20), active BIT DEFAULT 1, created_at DATETIME2 DEFAULT SYSUTCDATETIME())
+con.deadline_rule(rule_id NVARCHAR(60) PK, docket_family NVARCHAR(20) FK->vocab_docket_family, trigger_event NVARCHAR(120),
+  offset_days INT, basis_statute NVARCHAR(40) NULL FK->con.statute, description NVARCHAR(MAX))
+```
+
+### Indexes (0006): citation(citing_entry_id),(cited_entry_id),(cited_statute_id); document_topic(topic_id);
+opinion(decided_date); proceeding_stage(docket_id); docket_event(docket_id),(event_date);
+counsel(entry_id),(docket_id); brief(docket_id); reporter_citation(entry_id); headnote(entry_id).
+
+### Topic taxonomy seed (0008) — CON key-number tree used by the corpus
+Roots CON I–VII; sub-numbers referenced by the handoff headnotes/citator: `iii-7` (CON III · 7,
+Need / Service-Area Methodology), `iv-11` (Psychiatric/Behavioral — Need), `iv-12` (Hospital Beds — Need),
+`iv-13` (Ambulatory Surgery — Need), `iv-15` (Cardiac Cath / OHS — Need), `v-21` (Burden of Proof),
+`vi-24` (Substantial Evidence — Standard of Review), `vi-25` (Final Agency Action — Remand). Parents:
+`iii` Need/Utilization, `iv` Service-Type Need, `v` Procedure/Burden, `vi` Judicial Review. Give every
+leaf a parent; extend freely — this seed must at least cover the ids above.
+
+## common/ — new modules
+
+### common/docket_family.py
+`classify_family(docket_id_or_variant: str) -> str` -> one of vocab_docket_family. Rules: LNR-ASC/LNR-EQT
+by prefix; DET-EQT/DET-ASC by subtype (see docket.py DocketMatch); plain DET -> 'DET'; everything CON-* /
+county / GA-legacy -> 'CON'. Pure.
+
+### common/deadline_rules.py
+`DEADLINE_RULES: list[DeadlineRule]` (the same rows seeded into con.deadline_rule) and
+`compute_deadlines(family: str, trigger_event: str, base: date) -> list[ComputedDeadline]`
+(`ComputedDeadline(label, due_date, basis_statute, description)`). Pure; the API `/deadlines/calculate`
+and the seed both come from here (single source of truth). Offsets from the handoff docket-engine copy
+(e.g., challenge window 30 days; HO appointment 30 days; hearing window 60–120 days; judicial petition
+30 days; 120-day default finality).
+
+### common/proceeding.py  — Python port of docket-engine.js (kept in PARITY with the JS)
+```
+REFERENCE_NOW = date(2026, 6, 25)   # matches docket-engine.js `NOW`
+def build_proceeding(rec: dict, now: date = REFERENCE_NOW) -> dict
+   # rec = {type, num, facility, title, received, date, finding, county, contact}
+   # returns EXACTLY the JS build() shape: {badge, subtypeLabel?, subtypeSub?, isClosed, isActive,
+   #   filedLine, closedLine, durationLine, finalDisposition, precedent, compact[], stages[]}
+def stages_to_rows(docket_id, proceeding) -> list[dict]   # -> con.proceeding_stage column dicts
+```
+Parity is verified against golden JSON generated from the real JS (see tests). Port buildCON (stages
+0–7) and buildDET (stages 1–5, subtype copy) faithfully; keep the STATUS/SUBTYPE_COPY tables.
+NOTE the JS `precedentForCON` uses a string-seeded pseudo-random — replicate the exact `seedOf` hash and
+thresholds so precedent output matches.
+
+## api/ — new routers (mounted in api/main.py; same get_db dependency, parameterized SQL, whitelists)
+Response shapes mirror the handoff JS (camelCase keys in JSON responses to match the SPA).
+- `api/routers/cases.py`  GET /cases/{id} -> reader payload (opinion + paragraphs + headnotes +
+  reporterCitations + counsel + treatment + briefs + meta + citator summary)
+- `api/routers/proceeding.py`  GET /dockets/{docket_id}/proceeding -> build_proceeding output for the
+  matter (from stored con.proceeding_stage if present, else synthesized via common.proceeding from the matter row)
+- `api/routers/citator.py`  GET /citator/{id} -> {flags[], citingCases[], tableOfAuthorities[]}
+- `api/routers/topics.py`  GET /topics (tree) ; GET /topics/{topic_id} -> docs under a key number
+- `api/routers/statutes.py`  GET /statutes ; GET /statutes/{id} (+ citingCases)
+- `api/routers/history.py`  GET /history/{docket_id}?type= -> docket_event timeline
+- `api/routers/stats.py`  GET /stats?range= -> aggregates (grant/deny/withdraw by service_type,
+  docket_family, year; appeal reversal rate)
+- `api/routers/deadlines.py`  POST /deadlines/calculate {family,trigger_event,date} -> compute_deadlines
+- `api/routers/projects.py`  GET/POST /projects ; GET/POST /projects/{id}/items
+- `api/routers/alerts.py`  GET/POST /alerts ; DELETE /alerts/{id} (soft, active=0)
+- `api/routers/wiki.py`  GET /wiki ; GET /wiki/{id} ; POST /wiki/{id}/revisions ; POST /wiki/{id}/revisions/{rid}/review {action}
+- /ask stays but is optional (Copilot preferred). All new routers testable with tests/fakes.FakeConnection.
+
+## ingest/ — additions
+- `ingest/load_tags.py` gains the new matter/document columns (B1/B0). Keep it idempotent + rejects.
+  New multi-value/JSON columns: primary_service_area, competing_docket_ids (`;`/list). docket_family
+  defaults via common.docket_family.classify_family when the column is absent.
+- `ingest/load_document_text.py` — CLI `python -m ingest.load_document_text <blob-or-dir> [--apply]`.
+  Reads an OCR/text export (JSONL: `{entry_id, full_text, text_source, di_model, di_confidence, paragraphs:[{num,text}]}`)
+  and upserts con.document_text + con.opinion_paragraph (plain_text set; segs_json defaults to a single
+  plain segment when cross-links not yet editorially added). Idempotent. (Actual Document-Intelligence
+  invocation is documented in docs/06; the loader consumes its JSONL output — no live Azure call in code/tests.)
+
+## web/ — React console (built after backend)
+React + Vite + TypeScript SPA in `web/`. `web/design-reference/` holds the handoff (do not ship it).
+`web/src/lib/docketEngine.ts` = TS copy kept in parity with common/proceeding.py. Static Web Apps Free
+hosting; Entra auth via staticwebapp.config.json. One route per handoff view.
+
+## Conventions (research layer)
+- API JSON is camelCase (SPA contract); DB columns stay snake_case; routers map at the boundary.
+- New vocab/seed values must match this file exactly (Python constants in common/vocab.py mirror the
+  seed SQL, same as v1).
+- Parity: common/proceeding.py and web/src/lib/docketEngine.ts must both match golden fixtures generated
+  from tests/fixtures/handoff/docket-engine.js via node.
