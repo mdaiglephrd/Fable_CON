@@ -16,6 +16,7 @@ param location = 'eastus2'
 param sqlAdminObjectId = 'f5c31594-e092-4b56-8fb5-85ecc13c6b96'
 param sqlAdminLogin = 'mdai@phrd.com' // e.g. 'gacon-sql-admins' or 'admin@contoso.com'
 param sqlAdminPrincipalType = 'Group' // 'User' | 'Group' | 'Application'
+param restore = true
 
 // --- Options ------------------------------------------------------------------
 param enablePublicNetworkAccess = true // false once private endpoints are set up
