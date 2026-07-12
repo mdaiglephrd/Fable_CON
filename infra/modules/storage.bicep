@@ -10,7 +10,7 @@ param location string
 @description('Tags applied to all resources.')
 param tags object = {}
 
-@description('Blob containers to create.')
+@description('Blob containers to create. The default deployment provisions: index-snapshots, weekly-reports, tag-exports, and document-text (raw text extracted by Document Intelligence, consumed by ingest/load_document_text.py). The concrete list is assembled in main.bicep.')
 param containerNames array
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
