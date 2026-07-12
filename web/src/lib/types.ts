@@ -279,6 +279,11 @@ export interface SavedAlert {
   frequency?: string;
   active?: boolean;
   createdAt?: string;
+  /** Fixture-only presentation fields (comp's alert cards). */
+  alertType?: string;
+  description?: string;
+  latest?: Seg[];
+  newCount?: number;
 }
 
 export interface WikiArticle {
@@ -289,6 +294,93 @@ export interface WikiArticle {
   body?: unknown;
   status?: string;
   updatedAt?: string;
+}
+
+/** GET /wiki — index grouped by group_name. */
+export interface WikiIndexArticle {
+  id: string;
+  title?: string;
+  status?: string;
+  updatedAt?: string;
+  readTime?: string;
+  lead?: string;
+  justUpdated?: boolean;
+}
+
+export interface WikiIndexGroup {
+  group: string;
+  articles: WikiIndexArticle[];
+}
+
+export interface WikiIndex {
+  groups: WikiIndexGroup[];
+  total: number;
+  /** Fixture-only: title of the article with a pending suggested edit. */
+  pendingArticleId?: string | null;
+  pendingArticleTitle?: string | null;
+}
+
+/**
+ * Wiki article body block (fixture format, wikiFixtures.json):
+ * heading | paragraph | note callout | bullet list — prose in segment format.
+ */
+export interface WikiBodyBlock {
+  h?: string;
+  p?: Seg[];
+  note?: Seg[];
+  list?: Seg[][];
+}
+
+export interface WikiRelatedLink {
+  kind: string;
+  label: string;
+  target: string;
+}
+
+export interface WikiRevision {
+  revisionId?: number | string;
+  date?: string;
+  text?: string;
+  author?: string;
+  status?: string;
+  highlight?: boolean;
+}
+
+export interface WikiPendingEdit {
+  articleId: string;
+  revisionId: number | string;
+  author?: string;
+  sourceLabel?: string;
+  submittedAt?: string;
+  newHeading?: string;
+  newText?: string;
+}
+
+/** GET /wiki/{id} — article detail (fixture-rich; live maps best-effort). */
+export interface WikiArticleDetail {
+  articleId: string;
+  group?: string;
+  title?: string;
+  readTime?: string;
+  updated?: string;
+  lead?: string;
+  body?: WikiBodyBlock[];
+  related?: WikiRelatedLink[];
+  revisions?: WikiRevision[];
+  pending?: WikiPendingEdit | null;
+  justUpdated?: boolean;
+}
+
+/** GET /reports/events row (con.weekly_report_event). */
+export interface ReportEvent {
+  eventId?: number;
+  docketId?: string;
+  section?: string;
+  sectionHeading?: string;
+  reportDate?: string;
+  description?: string;
+  facility?: string;
+  [key: string]: unknown;
 }
 
 /**

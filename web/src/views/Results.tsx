@@ -73,7 +73,14 @@ export default function Results() {
   const q = searchParams.get('q') ?? '';
   const scope = searchParams.get('scope') ?? 'all';
 
-  const [facetSel, setFacetSel] = useState<Record<string, boolean>>({});
+  // Facet preselection from the advanced builder (?f=dim|val,dim|val…).
+  const [facetSel, setFacetSel] = useState<Record<string, boolean>>(() => {
+    const out: Record<string, boolean> = {};
+    for (const pair of (searchParams.get('f') ?? '').split(',')) {
+      if (pair.includes('|')) out[pair] = true;
+    }
+    return out;
+  });
   const [snippetView, setSnippetView] = useState(false);
   const [sortBy, setSortBy] = useState('relevance');
   const [showSortMenu, setShowSortMenu] = useState(false);

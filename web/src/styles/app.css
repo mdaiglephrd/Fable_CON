@@ -670,20 +670,133 @@
   border-bottom-color: var(--brand-red);
 }
 
-/* ===================== Placeholder screens ===================== */
+/* ===================== Phase-2 shared pieces ===================== */
 
-.placeholder-wrap {
-  padding: 24px 32px 60px;
+/* Form fields (the comp's uppercase label + bordered input pattern) */
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
 }
 
-.placeholder-card {
-  max-width: 720px;
+.field-input,
+.field-select,
+.field-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-xs);
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+
+.field-textarea {
+  min-height: 88px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.field-input:focus,
+.field-select:focus,
+.field-textarea:focus {
+  border-color: var(--brand-red);
+}
+
+/* Small filter chip-tabs (Applications type row, Stats range, Map metric) */
+.chip-tab {
+  padding: 5px 11px;
+  font-size: 12px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text2);
+}
+
+.chip-tab:hover {
+  color: var(--text);
+}
+
+.chip-tab.active {
+  background: var(--border2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Underlined section tabs (Alerts filter row, Library open/saved) */
+.line-tab {
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  background: transparent;
+}
+
+.line-tab:hover {
+  color: var(--accent-text);
+}
+
+.line-tab.active {
+  color: var(--accent-text);
+  font-weight: 600;
+  border-bottom-color: var(--brand-red);
+}
+
+/* Landing hub cards (KB / Research / Tools / Upload) */
+.hub-card {
+  text-align: left;
   background: var(--surface);
   border: 1px solid var(--surface2);
   border-radius: var(--radius-xs);
-  padding: 48px 40px;
-  text-align: center;
-  margin-top: 24px;
+  display: flex;
+  color: inherit;
+}
+
+.hub-card:hover {
+  border-color: var(--brand-red);
+  box-shadow: 0 2px 12px rgba(142, 27, 31, 0.08);
+}
+
+.hub-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: rgba(244, 63, 94, 0.14);
+  color: var(--accent-text);
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hub-icon.neutral {
+  background: var(--surface2);
+  color: var(--text2);
+}
+
+/* List container (day groups, index lists) */
+.list-card {
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  border-radius: var(--radius-xs);
+}
+
+.list-card .list-row {
+  border-bottom: 1px solid var(--surface2);
+}
+
+.day-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  margin-bottom: 10px;
 }
 
 /* ===================== Utility rows ===================== */

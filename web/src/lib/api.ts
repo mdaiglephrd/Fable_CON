@@ -10,8 +10,11 @@ import {
   caseIdForDocket,
   fixtureGetCase,
   fixtureGetCitator,
+  fixtureGetHistory,
   fixtureGetProceeding,
 } from './fixtures';
+import { computeDeadlines } from './deadlineRules';
+import wikiFixturesJson from './wikiFixtures.json';
 import type { Proceeding } from './docketEngine';
 import type {
   CaseReader,
@@ -19,6 +22,7 @@ import type {
   DeadlineCalcResponse,
   DocketEvent,
   Paged,
+  ReportEvent,
   ResearchProject,
   SavedAlert,
   SearchResponse,
@@ -26,7 +30,11 @@ import type {
   StatuteListItem,
   TopicDetail,
   TopicNode,
-  WikiArticle,
+  WikiArticleDetail,
+  WikiBodyBlock,
+  WikiIndex,
+  WikiPendingEdit,
+  WikiRevision,
 } from './types';
 
 export const API_BASE: string = import.meta.env.VITE_API_BASE ?? '/api';
@@ -141,6 +149,12 @@ export async function getHistory(
   docketId: string,
   type?: string,
 ): Promise<{ docketId: string; items: DocketEvent[]; total: number }> {
+  if (USE_FIXTURES) {
+    const all = fixtureGetHistory(docketId);
+    if (!all) throw new ApiError(404, `Docket ${docketId} not found.`);
+    const items = type ? all.filter((e) => e.type === type) : all;
+    return { docketId, items, total: items.length };
+  }
   return req(`/history/${encodeURIComponent(docketId)}${qs({ type })}`);
 }
 
@@ -149,13 +163,33 @@ export async function getStats(range: 'all' | '3yr' | '1yr' = 'all'): Promise<Re
   return req(`/stats${qs({ range })}`);
 }
 
-/** POST /deadlines/calculate */
+/** POST /deadlines/calculate — fixture mode computes from the local port of
+ * common/deadline_rules.py (see lib/deadlineRules.ts). */
 export async function calculateDeadlines(input: {
   family: string;
   triggerEvent: string;
   date: string;
 }): Promise<DeadlineCalcResponse> {
+  if (USE_FIXTURES) {
+    const base = new Date(`${input.date}T00:00:00`);
+    if (isNaN(base.getTime())) throw new ApiError(400, `Invalid date ${input.date}.`);
+    const deadlines = computeDeadlines(input.family, input.triggerEvent, base).map((d) => ({
+      label: d.label,
+      dueDate: d.dueDate.toISOString().slice(0, 10),
+      basisStatute: d.basisStatute,
+      description: d.description,
+    }));
+    return { ...input, deadlines };
+  }
   return req(`/deadlines/calculate`, { method: 'POST', body: JSON.stringify(input) });
+}
+
+/** GET /reports/events — weekly DCH report events (live only; the Reports
+ * view renders bundled digest fixtures when USE_FIXTURES). */
+export async function reportEvents(
+  params: Record<string, string | number | undefined> = {},
+): Promise<Paged<ReportEvent>> {
+  return req(`/reports/events${qs(params)}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -187,11 +221,88 @@ export async function searchDocuments(
 }
 
 // ---------------------------------------------------------------------------
-// Workspace CRUD (projects / alerts / wiki) — in-memory when on fixtures
+// Workspace CRUD (projects / alerts / wiki) — in-memory when on fixtures,
+// seeded with the comp's sample workspace so every screen renders standalone.
 // ---------------------------------------------------------------------------
 
-const memProjects: ResearchProject[] = [];
-const memAlerts: SavedAlert[] = [];
+const memProjects: ResearchProject[] = [
+  {
+    projectId: 'mri-need-bartow-psa',
+    name: 'MRI need — Bartow PSA',
+    description:
+      'Every determination construing the MRI need methodology (Rule 111-2-2-.40) in the Bartow primary service area, for the Riverstone remand.',
+    tags: ['III. Substantive Review', 'IV. Imaging (MRI/CT/PET)'],
+    status: 'open',
+    createdAt: 'Jun 18, 2026',
+    items: [
+      { itemId: 1, entryId: null, docketId: '2026007', note: 'Riverstone Imaging — Ct. App. opinion; remand posture' },
+      { itemId: 2, entryId: null, docketId: '2026002', note: 'In re Three Rivers Imaging — Commissioner final order' },
+      { itemId: 3, entryId: null, docketId: '2025028', flagged: true, note: 'Cardiac cath methodology — different rule, not relevant' },
+    ],
+  },
+  {
+    projectId: 'cardiac-cath-denials',
+    name: 'Cardiac cath denials 2024–2026',
+    description: 'Denial patterns under the Rule 111-2-2-.22(4)(c) volume threshold.',
+    tags: ['III. Substantive Review', 'V. Adjudication'],
+    status: 'complete',
+    createdAt: 'May 2, 2026',
+    items: [
+      { itemId: 1, entryId: null, docketId: '2025028', note: 'Northridge — 612 projected cases below the 750 minimum' },
+      { itemId: 2, entryId: null, docketId: '2026004', flagged: true, note: 'Psychiatric beds — different methodology' },
+    ],
+  },
+];
+
+const memAlerts: SavedAlert[] = [
+  {
+    alertId: 'alert-docket-riverstone',
+    alertType: 'Docket Watch',
+    name: 'Riverstone Imaging, LLC v. DCH — CON 2026007',
+    description: 'Alert when any new filing, decision, or related citation is added to this docket.',
+    frequency: 'Immediate',
+    active: true,
+    createdAt: 'Mar 2, 2026',
+    newCount: 2,
+    latest: [
+      ['b', 'Apr. 8, 2026'],
+      ' — Notice of Remand Status Report filed by Riverstone Imaging, LLC.',
+    ],
+  },
+  {
+    alertId: 'alert-search-mri-need',
+    alertType: 'Search Alert',
+    name: '"MRI need methodology" — All CON Sources',
+    description: 'Alert when new determinations, decisions, or opinions match this search.',
+    frequency: 'Daily digest',
+    active: true,
+    createdAt: 'Feb 11, 2026',
+    newCount: 1,
+    latest: [
+      ['b', 'Apr. 14, 2026'],
+      ' — 1 new result: ',
+      ['i', 'Three Rivers Health, LLC v. DCH'],
+      ', 376 Ga. App. 102 (Mar. 2026).',
+    ],
+  },
+  {
+    alertId: 'alert-statute-rule40',
+    alertType: 'Statute Watch',
+    name: 'Ga. Comp. R. & Regs. 111-2-2-.40 — MRI Need Methodology',
+    description: 'Alert when this rule section is amended or a rulemaking notice is published.',
+    frequency: 'Immediate',
+    active: true,
+    createdAt: 'Jan 20, 2026',
+    newCount: 0,
+    latest: [
+      'Proposed amendments open for public comment through ',
+      ['b', 'Jul. 15, 2026'],
+      '. See ',
+      ['stat', 'Rule 111-2-2-.40', 'rule-111-2-2-.40'],
+      '.',
+    ],
+  },
+];
 
 export async function listProjects(): Promise<Paged<ResearchProject>> {
   if (USE_FIXTURES) return { items: memProjects, total: memProjects.length };
@@ -290,18 +401,112 @@ export async function deleteAlert(alertId: string): Promise<unknown> {
   return req(`/alerts/${encodeURIComponent(alertId)}`, { method: 'DELETE' });
 }
 
-export async function listWiki(): Promise<Paged<WikiArticle>> {
-  return req(`/wiki`);
+// --- Wiki ------------------------------------------------------------------
+
+interface WikiFixtureArticle extends Omit<WikiArticleDetail, 'pending'> {
+  group: string;
+  body: WikiBodyBlock[];
+  revisions: WikiRevision[];
 }
 
-export async function getWikiArticle(articleId: string): Promise<WikiArticle> {
-  return req(`/wiki/${encodeURIComponent(articleId)}`);
+interface WikiFixtureShape {
+  groups: string[];
+  articles: WikiFixtureArticle[];
+  pending: WikiPendingEdit;
+}
+
+const WIKI_FIXTURE = wikiFixturesJson as unknown as WikiFixtureShape;
+
+// In-memory review state (fixture mode): one pending suggested edit that can
+// be approved (merged into the article body) or rejected.
+let memWikiPending: WikiPendingEdit | null = { ...WIKI_FIXTURE.pending };
+const memWikiApplied: Record<string, { heading: string; text: string; date: string }> = {};
+const WIKI_APPLIED_DATE = 'Jun 25, 2026'; // the console's frozen "today"
+
+export async function listWiki(): Promise<WikiIndex> {
+  if (USE_FIXTURES) {
+    const groups = WIKI_FIXTURE.groups
+      .map((group) => ({
+        group,
+        articles: WIKI_FIXTURE.articles
+          .filter((a) => a.group === group)
+          .map((a) => {
+            const applied = memWikiApplied[a.articleId];
+            return {
+              id: a.articleId,
+              title: a.title,
+              readTime: a.readTime,
+              lead: a.lead,
+              updatedAt: applied ? applied.date : a.updated,
+              justUpdated: !!applied,
+            };
+          }),
+      }))
+      .filter((g) => g.articles.length > 0);
+    const pendingTitle = memWikiPending
+      ? WIKI_FIXTURE.articles.find((a) => a.articleId === memWikiPending?.articleId)?.title
+      : null;
+    return {
+      groups,
+      total: WIKI_FIXTURE.articles.length,
+      pendingArticleId: memWikiPending?.articleId ?? null,
+      pendingArticleTitle: pendingTitle ?? null,
+    };
+  }
+  return req<WikiIndex>(`/wiki`);
+}
+
+export async function getWikiArticle(articleId: string): Promise<WikiArticleDetail> {
+  if (USE_FIXTURES) {
+    const raw = WIKI_FIXTURE.articles.find((a) => a.articleId === articleId);
+    if (!raw) throw new ApiError(404, `Wiki article ${articleId} not found.`);
+    const applied = memWikiApplied[articleId];
+    const body: WikiBodyBlock[] = applied
+      ? [...raw.body, { h: applied.heading }, { p: [applied.text] }]
+      : raw.body;
+    const revisions: WikiRevision[] = [
+      ...(applied
+        ? [{ date: applied.date, text: 'Published suggested update from completed research', highlight: true }]
+        : []),
+      ...raw.revisions,
+    ];
+    return {
+      ...raw,
+      body,
+      revisions,
+      updated: applied ? applied.date : raw.updated,
+      justUpdated: !!applied,
+      pending: memWikiPending?.articleId === articleId ? memWikiPending : null,
+    };
+  }
+  const raw = await req<Record<string, unknown>>(`/wiki/${encodeURIComponent(articleId)}`);
+  return {
+    articleId: String(raw.articleId ?? articleId),
+    group: (raw.groupName as string | undefined) ?? undefined,
+    title: raw.title as string | undefined,
+    updated: raw.updatedAt as string | undefined,
+    body: Array.isArray(raw.body) ? (raw.body as WikiBodyBlock[]) : undefined,
+    revisions: Array.isArray(raw.revisions) ? (raw.revisions as WikiRevision[]) : undefined,
+    pending: null,
+  };
 }
 
 export async function createWikiRevision(
   articleId: string,
   input: { author?: string; diff?: unknown },
 ): Promise<unknown> {
+  if (USE_FIXTURES) {
+    const diff = (input.diff ?? {}) as { newHeading?: string; newText?: string };
+    memWikiPending = {
+      articleId,
+      revisionId: Date.now(),
+      author: input.author,
+      newHeading: diff.newHeading,
+      newText: diff.newText,
+      submittedAt: WIKI_APPLIED_DATE,
+    };
+    return memWikiPending;
+  }
   return req(`/wiki/${encodeURIComponent(articleId)}/revisions`, {
     method: 'POST',
     body: JSON.stringify(input),
@@ -313,6 +518,19 @@ export async function reviewWikiRevision(
   revisionId: string | number,
   action: 'approve' | 'reject',
 ): Promise<unknown> {
+  if (USE_FIXTURES) {
+    if (memWikiPending?.articleId === articleId) {
+      if (action === 'approve') {
+        memWikiApplied[articleId] = {
+          heading: memWikiPending.newHeading ?? 'Suggested update',
+          text: memWikiPending.newText ?? '',
+          date: WIKI_APPLIED_DATE,
+        };
+      }
+      memWikiPending = null;
+    }
+    return { articleId, revisionId, status: action === 'approve' ? 'approved' : 'rejected' };
+  }
   return req(
     `/wiki/${encodeURIComponent(articleId)}/revisions/${encodeURIComponent(String(revisionId))}/review`,
     { method: 'POST', body: JSON.stringify({ action }) },
