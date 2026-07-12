@@ -7,7 +7,7 @@ param namePrefix = 'gacon'
 param environment = 'dev'
 
 // Region defaults to the resource group location; uncomment to override.
-param location = 'centralus'
+param location = 'eastus2'
 
 // --- Azure SQL Entra administrator (required) --------------------------------
 // Object ID + display name of the user or group that administers the SQL server.
@@ -31,7 +31,7 @@ param deployOpenAI = false // enable in a region with gpt-4o-mini + text-embeddi
 // --- Research layer (v2): console + document-text extraction -----------------
 param deployStaticWebApp = false // Azure Static Web App (Free) for the React console (web/)
 // SWA is region-limited; override if the RG region is unsupported (e.g. westus2, eastus2, centralus, westeurope, eastasia)
-param staticWebAppLocation = 'centralus'
+param staticWebAppLocation = 'eastus2'
 param deployDocIntel = true // Azure AI Document Intelligence for the document-text step
 param docIntelSku = 'F0' // 'F0' free (500 pages/mo) | 'S0' standard (for the initial corpus backfill)
 param sqlUseFreeOffer = true // Azure SQL Database free offer (GP serverless free monthly limits)
