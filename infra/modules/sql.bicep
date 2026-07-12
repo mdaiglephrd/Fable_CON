@@ -11,9 +11,6 @@ param serverName string
 param databaseName string
 
 @description('Azure region.')
-param location string
-
-@description('Azure region.')
 param sqlLocation string
 
 @description('Tags applied to all resources.')
