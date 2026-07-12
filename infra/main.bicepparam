@@ -7,7 +7,7 @@ param namePrefix = 'gacon'
 param environment = 'dev'
 
 // Region defaults to the resource group location; uncomment to override.
-// param location = 'eastus2'
+param location = 'eastus2'
 
 // --- Azure SQL Entra administrator (required) --------------------------------
 // Object ID + display name of the user or group that administers the SQL server.
