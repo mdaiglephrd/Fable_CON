@@ -1,5 +1,6 @@
 import json
 from datetime import date, datetime
+from decimal import Decimal
 
 import pytest
 
@@ -403,3 +404,190 @@ class TestRealSampleExport:
         assert shaped[4].document["outcome"] == "Affirmed (appeal)"
         assert shaped[2].matter["county"] == "DeKalb"
         assert shaped[3].document["decision_level"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Research layer (v2) — new tag-export columns (docs/05 §A)
+# ---------------------------------------------------------------------------
+
+
+class TestResearchLayerShaping:
+    def test_estimated_cost_money_string(self):
+        shaped = shape_row(full_row(estimated_cost="$1,234,567"))
+        assert shaped.matter["estimated_cost"] == Decimal("1234567.00")
+
+    def test_estimated_cost_scaled_and_bare_forms(self):
+        assert shape_row(full_row(estimated_cost="$4.5 million")).matter[
+            "estimated_cost"
+        ] == Decimal("4500000.00")
+        assert shape_row(full_row(estimated_cost="2500000")).matter[
+            "estimated_cost"
+        ] == Decimal("2500000.00")
+
+    def test_estimated_cost_json_number(self):
+        shaped = shape_row(
+            {"entry_id": 1, "docket_id": "CON-1234567", "estimated_cost": 1234567.89}
+        )
+        assert shaped.matter["estimated_cost"] == Decimal("1234567.89")
+
+    def test_estimated_cost_unparseable_rejects(self):
+        with pytest.raises(RowRejected) as exc:
+            shape_row(full_row(estimated_cost="a lot of money"), row_number=4)
+        assert exc.value.error.field == "estimated_cost"
+        assert exc.value.error.row_number == 4
+
+    def test_primary_service_area_validated_and_json(self):
+        shaped = shape_row(full_row(primary_service_area="Fulton; DeKalb"))
+        assert json.loads(shaped.matter["primary_service_area"]) == ["Fulton", "DeKalb"]
+
+    def test_primary_service_area_tolerant_forms(self):
+        shaped = shape_row(full_row(primary_service_area="fulton county; de kalb"))
+        assert json.loads(shaped.matter["primary_service_area"]) == ["Fulton", "DeKalb"]
+
+    def test_primary_service_area_json_list(self):
+        shaped = shape_row(
+            {
+                "entry_id": 1,
+                "docket_id": "CON-1234567",
+                "primary_service_area": ["Fulton", "Cobb"],
+            }
+        )
+        assert json.loads(shaped.matter["primary_service_area"]) == ["Fulton", "Cobb"]
+
+    def test_primary_service_area_unknown_county_rejects(self):
+        with pytest.raises(RowRejected) as exc:
+            shape_row(full_row(primary_service_area="Fulton; Springfield"))
+        assert exc.value.error.field == "primary_service_area"
+        assert exc.value.error.raw_value == "Springfield"
+
+    def test_docket_family_derived_when_absent(self):
+        assert shape_row(full_row()).matter["docket_family"] == "CON"
+        assert (
+            shape_row({"entry_id": 1, "docket_id": "DET-2020-014"}).matter["docket_family"]
+            == "DET"
+        )
+        assert (
+            shape_row({"entry_id": 1, "docket_id": "DET-EQT2024-073"}).matter[
+                "docket_family"
+            ]
+            == "DET-EQT"
+        )
+
+    def test_docket_family_validated_when_present(self):
+        # Case-tolerant vocabulary match; the provided value wins over derivation.
+        shaped = shape_row(full_row(docket_family="det-eqt"))
+        assert shaped.matter["docket_family"] == "DET-EQT"
+
+    def test_docket_family_invalid_rejects(self):
+        with pytest.raises(RowRejected) as exc:
+            shape_row(full_row(docket_family="CON-EQT"))
+        assert exc.value.error.field == "docket_family"
+
+    def test_competing_docket_ids_normalized_to_canonical(self):
+        shaped = shape_row(full_row(competing_docket_ids="GA-7654321; DET 2020 014"))
+        assert json.loads(shaped.matter["competing_docket_ids"]) == [
+            "CON-7654321",
+            "DET-2020-014",
+        ]
+
+    def test_competing_docket_ids_unnormalizable_rejects(self):
+        with pytest.raises(RowRejected) as exc:
+            shape_row(full_row(competing_docket_ids="CON-7654321; hello world"))
+        assert exc.value.error.field == "competing_docket_ids"
+        assert exc.value.error.raw_value == "hello world"
+
+    def test_text_source_enum(self):
+        assert shape_row(full_row(text_source="OCR")).document["text_source"] == "ocr"
+        assert shape_row(full_row(text_source="native")).document["text_source"] == "native"
+        assert shape_row(full_row(text_source="tag")).document["text_source"] == "tag"
+
+    def test_text_source_invalid_rejects(self):
+        with pytest.raises(RowRejected) as exc:
+            shape_row(full_row(text_source="scanned"))
+        assert exc.value.error.field == "text_source"
+
+    def test_title_passthrough(self):
+        shaped = shape_row(full_row(title="  Order on Remand  "))
+        assert shaped.document["title"] == "Order on Remand"
+
+    def test_lifecycle_dates_and_batching_cycle(self):
+        shaped = shape_row(
+            full_row(
+                contact_officer="J. Officer",
+                project_description="New PET unit",
+                letter_of_intent_date="1/15/2024",
+                deemed_complete_date="2024-02-01",
+                decision_deadline="2024-06-01",
+                batching_cycle="2024 Q1 diagnostic",
+            )
+        )
+        m = shaped.matter
+        assert m["contact_officer"] == "J. Officer"
+        assert m["project_description"] == "New PET unit"
+        assert m["letter_of_intent_date"] == date(2024, 1, 15)
+        assert m["deemed_complete_date"] == date(2024, 2, 1)
+        assert m["decision_deadline"] == date(2024, 6, 1)
+        assert m["batching_cycle"] == "2024 Q1 diagnostic"
+
+    def test_bad_lifecycle_date_rejects(self):
+        with pytest.raises(RowRejected) as exc:
+            shape_row(full_row(letter_of_intent_date="soonish"))
+        assert exc.value.error.field == "letter_of_intent_date"
+
+    def test_new_columns_absent_are_none(self):
+        # full_row() predates the research layer, so every new column is blank.
+        shaped = shape_row(full_row())
+        for col in (
+            "contact_officer",
+            "project_description",
+            "estimated_cost",
+            "primary_service_area",
+            "letter_of_intent_date",
+            "deemed_complete_date",
+            "decision_deadline",
+            "batching_cycle",
+            "competing_docket_ids",
+        ):
+            assert shaped.matter[col] is None
+        assert shaped.document["title"] is None
+        assert shaped.document["text_source"] is None
+        assert shaped.matter["docket_family"] == "CON"  # derived, never None
+
+
+class TestResearchLayerMergeSql:
+    def test_matter_merge_has_new_columns_with_coalesce(self):
+        for col in (
+            "contact_officer",
+            "project_description",
+            "estimated_cost",
+            "primary_service_area",
+            "docket_family",
+            "letter_of_intent_date",
+            "deemed_complete_date",
+            "decision_deadline",
+            "batching_cycle",
+            "competing_docket_ids",
+        ):
+            assert f"{col} = COALESCE(s.{col}, t.{col})" in MATTER_MERGE_SQL
+
+    def test_document_merge_has_new_columns_with_coalesce(self):
+        for col in ("title", "text_source"):
+            assert f"{col} = COALESCE(s.{col}, t.{col})" in DOCUMENT_MERGE_SQL
+
+    def test_loader_passes_json_arrays_and_family(self):
+        conn = FakeConnection()
+        load_rows(
+            conn,
+            [
+                full_row(
+                    primary_service_area="Fulton; DeKalb",
+                    competing_docket_ids="CON-7654321",
+                    estimated_cost="$1,000,000",
+                )
+            ],
+        )
+        _, params = next((s, p) for s, p in conn.executed if "MERGE con.matter" in s)
+        assert json.dumps(["Fulton", "DeKalb"]) in params
+        assert json.dumps(["CON-7654321"]) in params
+        assert "CON" in params  # derived docket_family
+        assert Decimal("1000000.00") in params

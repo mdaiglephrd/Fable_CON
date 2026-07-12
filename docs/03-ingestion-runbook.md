@@ -3,15 +3,19 @@
 How data gets into the database, how to operate and monitor the pipelines, and
 what to do when something sticks. Verified against `ingest/load_tags.py`,
 `ingest/index_diff.py`, `ingest/weekly_report_parser.py`,
-`functions/processing.py` / `function_app.py`, and `schema/migrate.py`.
+`ingest/load_document_text.py`, `functions/processing.py` /
+`function_app.py`, and `schema/migrate.py`. What to *capture* in each input is
+specified in [05-metadata-extraction-spec.md](05-metadata-extraction-spec.md);
+this page is how to *load* it.
 
-Three inputs, three paths:
+Four inputs, four paths:
 
 | Input | Format | How it is ingested | Lands in |
 |---|---|---|---|
 | Metadata tag export | CSV or JSON | **Manual CLI** (`ingest.load_tags`) — the `tag-exports` container is just a drop zone; no trigger watches it | `con.matter`, `con.document` + child tables |
 | Repository index snapshot | `.jsonl.gz` (gzipped JSON Lines) | Blob trigger on `index-snapshots` (or manual CLI `ingest.index_diff`) | `con.index_snapshot`, `con.change_log`, re-validation flags on `con.document` |
 | DCH weekly CON Tracking Report | PDF | Blob trigger on `weekly-reports` (or manual CLI `ingest.weekly_report_parser`) | `con.weekly_report_event`, stub rows in `con.matter` |
+| Document-text export (Document Intelligence output) | JSONL | **Manual CLI** (`ingest.load_document_text`) — the `document-text` container is a drop zone for extraction output; no trigger watches it | `con.document_text`, `con.opinion_paragraph` |
 
 > **Awaiting real samples.** The tag-export column names and the weekly-report
 > layout were built to the DESIGN.md spec and a synthetic fixture
@@ -50,9 +54,20 @@ names are exactly the field names from DESIGN.md:
   `outcome`, `parties`, `source_path`, `template_name`, `ocr_status`,
   `ocr_confidence`, `validation_status`, `validated_by`, `validated_date`,
   `duplicate_of`.
+- **Research-layer columns** (spec: [05-metadata-extraction-spec.md §A](05-metadata-extraction-spec.md);
+  ride the same export, blank = "not provided", never overwrites a populated
+  value). Matter-level: `contact_officer`, `project_description`,
+  `estimated_cost` (plain numbers, `"$1,234,567.89"`, or `"$4.5 million"`),
+  `primary_service_area` (county names), `docket_family` (one of
+  CON | DET | DET-EQT | DET-ASC | LNR-ASC | LNR-EQT; derived from the docket id
+  via `common/docket_family.py` when absent), `letter_of_intent_date`,
+  `deemed_complete_date`, `decision_deadline`, `batching_cycle`,
+  `competing_docket_ids` (canonicalized). Document-level: `title`,
+  `text_source` (ocr | native | tag). Analytical fields (headnotes, treatment,
+  topics, synopses, citation edges) are **not** export columns — see §4.1.
 - **Multi-value columns** — `service_type`, `phases_present`,
-  `docket_variants`, `parties`, `completeness_flags` — are **`;`-separated in
-  CSV** and **arrays in JSON**.
+  `docket_variants`, `parties`, `completeness_flags`, `primary_service_area`,
+  `competing_docket_ids` — are **`;`-separated in CSV** and **arrays in JSON**.
 - Vocab-controlled columns (`matter_type`, `action_type`, `doc_type`, `phase`,
   `outcome`, `final_outcome`, `service_type`, `phases_present`, `county`,
   `validation_status`) must match `common/vocab.py` exactly after
@@ -133,6 +148,35 @@ same PDF inserts nothing new; unknown canonical dockets get **stub matters**
 (`completeness_flags = ["stub_from_weekly_report"]`) so events always join to
 a matter; existing matter fields are never overwritten.
 
+### 1.4 Document-text export (JSONL)
+
+The output of your Document Intelligence extraction run (the run itself is
+operator-driven — `docs/06-research-console-buildout.md` Phase 3; extraction
+blobs land in the `document-text` container). One JSON object per line, shape
+in [05-metadata-extraction-spec.md §B](05-metadata-extraction-spec.md):
+
+```json
+{"entry_id": 9000030, "full_text": "...", "text_source": "ocr",
+ "di_model": "prebuilt-layout", "di_confidence": 0.98,
+ "paragraphs": [{"num": "1", "text": "In February 2023, ..."}]}
+```
+
+- `entry_id` (int), non-empty `full_text`, and `text_source` (ocr | native |
+  tag) are required; malformed records (including non-JSON lines) go to the
+  rejects report, never a crash.
+- **Existence check**: every `entry_id` must already exist in `con.document` —
+  unknown ids are rejected with *"entry_id not in con.document (load the tag
+  export first)"*. Load the tag export before the text.
+- **Wholesale paragraph replace**: a record that carries a `paragraphs` key
+  **owns the entire paragraph set** for that entry — existing
+  `con.opinion_paragraph` rows are deleted and re-inserted (an empty list
+  clears them). A record *without* the key leaves existing paragraphs
+  untouched. `full_text`/`char_count` always take the incoming value (a
+  re-extraction is authoritative); `text_source`/`di_model`/`di_confidence`
+  keep the usual `COALESCE(source, target)` semantics.
+- Paragraph `plain_text` is set now; `segs_json` starts as a single plain
+  segment and is enriched with cross-links during the editorial pass (§4.1).
+
 ---
 
 ## 2. Running each CLI manually
@@ -202,7 +246,35 @@ docket, and **warnings** (unrecognized counties, unparseable costs/dates, no
 report date). On a first real DCH PDF, always run without `--apply` and read
 the warnings — they tell you which regex table needs tuning.
 
-### 2.4 Search index refresh (after any bulk load)
+### 2.4 Document-text JSONL → `con.document_text` / `con.opinion_paragraph`
+
+```bash
+# validate first — the default is a dry run (no DB):
+python -m ingest.load_document_text extracted.jsonl --rejects rejects.csv
+
+# then write:
+python -m ingest.load_document_text extracted.jsonl --apply --rejects rejects.csv
+
+# a directory loads every *.jsonl in it (sorted order):
+python -m ingest.load_document_text extractions/ --apply
+```
+
+Full signature:
+`python -m ingest.load_document_text path [--apply] [--batch-size 200] [--rejects out.csv]`
+
+- `path`: a JSONL file, or a directory of `*.jsonl` files.
+- Without `--apply` nothing touches the database — records are parsed and
+  validated and a summary is printed.
+- `--batch-size` (default 200): records per commit; idempotent + resumable
+  like `load_tags` (MERGE + wholesale paragraph replacement converge on rerun).
+- `--rejects out.csv`: same reject-report format as `load_tags`
+  (`row_number,field,message,raw_value`; row numbers are 1-based record
+  positions in the input stream). The console output shows only the first 20.
+
+Prints: records read / texts upserted / paragraphs written / commits /
+rejected records (dry run: valid records / paragraphs parsed).
+
+### 2.5 Search index refresh (after any bulk load)
 
 ```bash
 python -m api.search_sync [--recreate] [--skip-vectors] [--batch-size 200]
@@ -268,9 +340,11 @@ re-review:
    `revalidation_flagged = 1`. The repo metadata columns are **not** updated —
    tag loads own those; the `change_log.details` JSON carries the new values.
 3. Researchers re-validate:
-   - **Power App** (`m365/powerapp/` — ValidationScreen is a work queue of
-     `validation_status = 'Unvalidated'` rows; buttons `Patch()` the row with
-     status, `validated_by`, `validated_date`), or
+   - **The research console** (`web/` — its validation screens work the queue
+     of `validation_status = 'Unvalidated'` rows; writes flow console →
+     FastAPI → `con.document`, stamping status, `validated_by`,
+     `validated_date`. The Power App that used to do this is retired —
+     `m365/powerapp/README.md`), or
    - **SQL** directly:
      ```sql
      UPDATE con.document
@@ -283,6 +357,20 @@ re-review:
      and `GET /changes?in_scope=true&change_type=modified`.
 4. Deleted in-scope documents are **logged only** — never deleted from
    `con.document`. Watch `GET /changes?change_type=deleted&in_scope=true`.
+
+### 4.1 The editorial pass (research-layer analytical fields)
+
+The analytical fields a machine cannot reliably decide — **headnotes** +
+key-number topics, **treatment / good-law level**, **editorial synopses**, and
+citation treatments — are not loader inputs: they are entered and verified by
+a person **in the console's validation screens**, reusing the same
+`Unvalidated → Validated / Corrected / Rejected` workflow as above
+(spec: [05-metadata-extraction-spec.md](05-metadata-extraction-spec.md),
+"Editorial (E) fields"). When tagging capacity is limited, follow docs/05's
+priority order: (1) objective fields for all documents, (2) citation edges,
+(3) treatment level + headnotes/topics for decided opinions (levels 2–4),
+(4) editorial synopses. If your tagging team produces this data outside the
+console, docs/05 §D defines the optional side-file shapes.
 
 ---
 
@@ -365,3 +453,6 @@ signal that the export's columns or vocab values drifted from spec.
 | Local CLI can't reach SQL | Your client IP not in the firewall; or `az login` token for the wrong tenant | `az sql server firewall-rule create ...` (step 5.1 of guide 01); `az account show` to confirm tenant/subscription. |
 | `pyodbc` errors about the driver (`Can't open lib 'ODBC Driver 18 for SQL Server'`) | ODBC platform driver missing (local machine or a changed Functions base image) | Install msodbcsql18 locally; in Azure, verify per `functions/README.md` "ODBC driver" (log `pyodbc.drivers()` or `odbcinst -q -d` from Kudu/SSH); as a workaround set `SQL_CONNECTION_STRING` naming the driver version present. |
 | `search_sync` 403 | Local user lacks Search data-plane roles and no `SEARCH_API_KEY` set | Grant yourself Search Service Contributor + Search Index Data Contributor, or export the admin key (guide 01, step 10). |
+| `load_document_text` rejects rows with `entry_id not in con.document (load the tag export first)` | The document rows those texts belong to were never loaded — `con.document_text` FKs to `con.document`, and the loader existence-checks each batch instead of letting the FK insert fail | Run `python -m ingest.load_tags` for the export covering those entry_ids first, then rerun `load_document_text` (idempotent). If the id is genuinely wrong, fix the JSONL. |
+| Document Intelligence extraction stalls / errors partway through the corpus | `docIntelSku = 'F0'` caps at **500 pages/month** — the ~24,290-document corpus far exceeds it | Batch the backfill across months at $0, or temporarily redeploy with `docIntelSku = 'S0'` (~$1.50/1,000 pages), run the extraction, then drop back to `F0` (`infra/README.md` step 8; decision table in guide 02). |
+| Paragraphs for a document were replaced (or wiped) unexpectedly after a text re-load | Paragraphs are replaced **wholesale** per entry_id: any record carrying a `paragraphs` key owns the entire set (an **empty list clears it**) — a partial paragraph list overwrites the full one | Re-run with a record carrying the **complete** paragraph set for that entry_id; to update only `full_text`/metadata without touching paragraphs, omit the `paragraphs` key entirely. Editorial `segs_json` cross-links added in the console are lost on replace — re-extract before the editorial pass, not after. |

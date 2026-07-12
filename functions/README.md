@@ -13,6 +13,14 @@ import) so it is unit-testable without the Functions runtime
 (`tests/test_functions_logic.py`). `function_app.py` is a thin decorated
 wrapper. Blobs with other extensions are ignored (not recorded).
 
+> **Not handled here — document-text extraction.** The research layer's
+> document-text intake is **operator-run, not a Function trigger**: you run
+> the Document Intelligence extraction and load its JSONL output with
+> `python -m ingest.load_document_text` (per
+> `docs/06-research-console-buildout.md` Phase 3). The `document-text`
+> Storage container is a drop zone for extraction output only — no trigger
+> watches it. Runbook: `docs/03-ingestion-runbook.md`.
+
 ## How the triggers work
 
 ### `snapshot_blob_trigger` (blob trigger, `%SNAPSHOT_CONTAINER%/{name}`)

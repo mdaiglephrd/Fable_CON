@@ -207,17 +207,21 @@ before scheduling aggressive scans.
 
 **What to configure** — three audit trails, stitched:
 
-1. **Purview Audit** for M365-side actions: Power Apps/Power Platform
-   activities (app launched, connection used), Power BI activities (report
+1. **Purview Audit** for M365-side actions: Power BI activities (report
    viewed, exported), Copilot & agent interactions ("Interacted with Copilot"
    events, and E7's agent-action logging). Confirm auditing is enabled
-   (default on for new tenants).
-2. **Azure SQL auditing** for the writes that matter most — the validation
-   Patches from the Power App hit `con.document` directly, and Purview cannot
-   see row-level SQL changes. Enable server-level auditing to a Log
-   Analytics workspace; the `UPDATE` on `con.document` carrying
+   (default on for new tenants). (Power Apps/Power Platform activity events
+   only apply if you still run any Power Platform artifact — the validation
+   Power App is retired; see `../powerapp/README.md`.)
+2. **Azure SQL auditing** for the writes that matter most — validation
+   actions flow **console → FastAPI → SQL** (an `UPDATE` on `con.document`),
+   and Purview cannot see row-level SQL changes. Enable server-level auditing
+   to a Log Analytics workspace; the `UPDATE` on `con.document` carrying
    `validation_status`/`validated_by`/`validated_date` is your
-   who-validated-what trail (complementing the columns themselves).
+   who-validated-what trail (complementing the columns themselves). This is
+   the **same audit SQL as before** the console replaced the Power App — the
+   write shape didn't change, only the client. See §8 for the one caveat
+   (the SQL principal is now the API's identity).
 3. **Application-level**: the repo already records pipeline provenance
    (`con.change_log`, `con.processed_blob`) — surface it in the Power BI
    audit page rather than duplicating it in Purview.
@@ -236,8 +240,8 @@ before scheduling aggressive scans.
    UPDATE on `con.document` and writes to `con.watchlist`. (Azure cost:
    Log Analytics ingestion/retention — small.)
 4. Document the mapping in your runbook: "who validated entry X" = the
-   `validated_by` column, corroborated by SQL audit log, corroborated by the
-   Power Apps launch event in Purview Audit.
+   `validated_by` column, corroborated by the SQL audit log, corroborated by
+   the Entra sign-in logs for the console/API apps (§8).
 
 **E7 coverage** — Purview Audit (incl. Premium's longer retention and richer
 events, plus E7's agent traceability) is covered. Azure SQL auditing + Log
@@ -295,6 +299,55 @@ Defender for Cloud AI threat protection is **extra purchase (Azure)**.
 
 ---
 
+## 8. The research console + API as governed surfaces
+
+The primary researcher UI is the **CON Research Console** (`web/`, Azure Static
+Web Apps Free) backed by the FastAPI app (App Service with Entra "Easy Auth").
+Both are Entra-authenticated applications in the same tenant, which puts them
+squarely inside the identity-governance tooling E7 already includes. This
+section is additive to §§1–7 — nothing above changes.
+
+**What to configure**
+
+- **Entra Conditional Access for the console + API apps.** Target the two app
+  registrations that the Static Web App's Entra sign-in and the App Service
+  Authentication blade use: require MFA for the analyst group, add a
+  compliant-device condition if you manage devices, and add sign-in-risk
+  conditions if you run risk-based policies. Conditional Access is an Entra ID
+  P1/P2 capability — **covered**: E7's E5 baseline includes Entra ID P2, and
+  E7 adds the full Microsoft Entra Suite on top (`../README.md` coverage
+  table). Which app registrations exist and what they are named depends on how
+  auth was wired — verify in your tenant (Entra admin center > App
+  registrations) before targeting policies.
+- **Audit trail for validation actions.** Validation writes no longer come
+  from a Power Platform connector: they flow **console → FastAPI → SQL**. The
+  Azure SQL auditing configured in §6 is unchanged and remains the row-level
+  trail — the **same audit SQL as before** (the database-level audit spec
+  narrowed to `UPDATE` on `con.document` and writes to `con.watchlist` still
+  captures everything). One difference to record in your runbook: the SQL
+  principal in the audit log is the API application's identity, not the end
+  user — the human actor is the `validated_by` column the API stamps,
+  corroborated by the Entra sign-in logs for the console/API applications.
+- **DSPM for AI — the agent's console deep links.** The Copilot Studio agent
+  now cites research-console deep links (`/docket/{docket_id}`,
+  `/document/{entry_id}`) alongside DocView links
+  (`../copilot-studio/agent-instructions.md`). The DSPM-for-AI
+  prompt/response visibility you enabled in §7 therefore also covers the
+  console-bound traffic the agent generates: its responses show which console
+  records users are being steered into. When reviewing DSPM reports, treat
+  console URLs as part of the agent's output surface, and keep the agent's
+  link domains limited to DocView and the console origin (any other domain in
+  an agent response is a red flag worth investigating — likely fabrication or
+  prompt injection).
+
+**E7 coverage** — Conditional Access (Entra ID P2 via the E5 baseline, plus
+the E7 Entra Suite) and DSPM for AI are covered. The hosting itself is Azure:
+Static Web Apps Free keeps the console at $0 and App Service is F1 ($0 pilot)
+or B1 (paid) per `docs/06-research-console-buildout.md`; Azure SQL auditing +
+Log Analytics remain Azure consumption exactly as in §6.
+
+---
+
 ## Quick coverage recap
 
 | Section | Covered by E7 | Extra purchase |
@@ -305,3 +358,4 @@ Defender for Cloud AI threat protection is **extra purchase (Azure)**.
 | 5 Data Map / Unified Catalog | — | ✔ Azure consumption |
 | 6 Audit | ✔ (Purview Audit) | Azure SQL auditing + Log Analytics = Azure |
 | 7 AI governance | ✔ (DSPM, CommCompliance, Agent 365) | Defender for Cloud AI plan = Azure |
+| 8 Console + API surfaces | ✔ (Conditional Access via Entra ID P2/Entra Suite; DSPM link coverage) | Console/API hosting + SQL auditing = Azure (free-tier posture ≈ $0, see docs/06) |

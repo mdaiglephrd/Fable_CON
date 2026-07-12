@@ -494,8 +494,8 @@ Response shapes mirror the handoff JS (camelCase keys in JSON responses to match
 - `api/routers/topics.py`  GET /topics (tree) ; GET /topics/{topic_id} -> docs under a key number
 - `api/routers/statutes.py`  GET /statutes ; GET /statutes/{id} (+ citingCases)
 - `api/routers/history.py`  GET /history/{docket_id}?type= -> docket_event timeline
-- `api/routers/stats.py`  GET /stats?range= -> aggregates (grant/deny/withdraw by service_type,
-  docket_family, year; appeal reversal rate)
+- `api/routers/stats.py`  GET /stats?range= -> aggregates (grant/denial KPIs; byService/byYear/
+  byFamily counts; appeal reversal rate)
 - `api/routers/deadlines.py`  POST /deadlines/calculate {family,trigger_event,date} -> compute_deadlines
 - `api/routers/projects.py`  GET/POST /projects ; GET/POST /projects/{id}/items
 - `api/routers/alerts.py`  GET/POST /alerts ; DELETE /alerts/{id} (soft, active=0)
@@ -506,7 +506,8 @@ Response shapes mirror the handoff JS (camelCase keys in JSON responses to match
 - `ingest/load_tags.py` gains the new matter/document columns (B1/B0). Keep it idempotent + rejects.
   New multi-value/JSON columns: primary_service_area, competing_docket_ids (`;`/list). docket_family
   defaults via common.docket_family.classify_family when the column is absent.
-- `ingest/load_document_text.py` — CLI `python -m ingest.load_document_text <blob-or-dir> [--apply]`.
+- `ingest/load_document_text.py` — CLI `python -m ingest.load_document_text <jsonl-file-or-dir>
+  [--apply] [--batch-size 200] [--rejects out.csv]` (dry-run by default).
   Reads an OCR/text export (JSONL: `{entry_id, full_text, text_source, di_model, di_confidence, paragraphs:[{num,text}]}`)
   and upserts con.document_text + con.opinion_paragraph (plain_text set; segs_json defaults to a single
   plain segment when cross-links not yet editorially added). Idempotent. (Actual Document-Intelligence

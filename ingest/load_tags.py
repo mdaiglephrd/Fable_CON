@@ -7,9 +7,18 @@ CLI:
 Input: one row per document, carrying both the document's fields and its
 matter's fields (column names == the field names in DESIGN.md; matter fields
 repeated on every document row of that matter). Multi-value columns
-(service_type, phases_present, docket_variants, parties — and
-completeness_flags, which is stored as a JSON array) are ';'-separated in CSV
-and arrays in JSON.
+(service_type, phases_present, docket_variants, parties,
+primary_service_area, competing_docket_ids — and completeness_flags, which
+is stored as a JSON array) are ';'-separated in CSV and arrays in JSON.
+
+Research-layer columns (docs/05-metadata-extraction-spec.md §A) ride the same
+export. Matter-level: contact_officer, project_description, estimated_cost
+(money — plain numbers, "$1,234,567.89", or "$4.5 million"),
+primary_service_area (county names, stored as a JSON array), docket_family
+(one of vocab.DOCKET_FAMILIES; derived via common.docket_family when absent),
+letter_of_intent_date, deemed_complete_date, decision_deadline,
+batching_cycle, competing_docket_ids (dockets, canonicalized and stored as a
+JSON array). Document-level: title, text_source (ocr|native|tag).
 
 Contracts:
 - shape_row(row) is PURE: normalizes the docket via common.docket, checks
@@ -37,13 +46,16 @@ import sys
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 
 from common.docket import normalize_docket
+from common.docket_family import classify_family
 from common.vocab import (
     ACTION_TYPES,
     DECISION_LEVELS,
     DOC_TYPES,
+    DOCKET_FAMILIES,
     MATTER_TYPES,
     OUTCOMES,
     PHASES,
@@ -52,8 +64,13 @@ from common.vocab import (
     match_county,
     match_vocab,
 )
+from ingest.weekly_report_parser import parse_cost
 
 log = logging.getLogger(__name__)
+
+# document.text_source / document_text.text_source enum (DESIGN.md research
+# layer: NVARCHAR(10), not a vocab table).
+TEXT_SOURCES: tuple[str, ...] = ("ocr", "native", "tag")
 
 DOCVIEW_URL_TEMPLATE = (
     "https://weblink.dch.georgia.gov/WebLink/DocView.aspx"
@@ -163,6 +180,25 @@ def _parse_float(row_number: int, field_name: str, value: object) -> float | Non
         return float(s)
     except ValueError:
         raise _reject(row_number, field_name, "not a number", value) from None
+
+
+def _parse_money(row_number: int, field_name: str, value: object) -> Decimal | None:
+    """DECIMAL(18,2) money column: plain numbers, "$1,234,567.89", "$4.5 million".
+
+    Reuses the weekly-report cost parser so both intake paths accept the same
+    money shapes.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise _reject(row_number, field_name, "not a money amount", value)
+    s = str(value).strip()
+    if not s:
+        return None
+    parsed = parse_cost(s)
+    if parsed is None:
+        raise _reject(row_number, field_name, "not a money amount", value)
+    return parsed
 
 
 def _parse_date(row_number: int, field_name: str, value: object) -> date | None:
@@ -334,6 +370,32 @@ def shape_row(row: dict, row_number: int = 0) -> ShapedRow:
     completeness_flags = _multi(row.get("completeness_flags"))
     parties = _multi(row.get("parties"))
 
+    primary_service_area: list[str] = []
+    for raw_psa in _multi(row.get("primary_service_area")):
+        psa_county = match_county(raw_psa)
+        if psa_county is None:
+            raise _reject(
+                row_number, "primary_service_area", "not a Georgia county", raw_psa
+            )
+        if psa_county not in primary_service_area:
+            primary_service_area.append(psa_county)
+
+    competing_docket_ids: list[str] = []
+    for raw_competing in _multi(row.get("competing_docket_ids")):
+        competing = normalize_docket(raw_competing)
+        if competing is None:
+            raise _reject(
+                row_number, "competing_docket_ids", "unnormalizable docket", raw_competing
+            )
+        if competing.canonical not in competing_docket_ids:
+            competing_docket_ids.append(competing.canonical)
+
+    docket_family = _vocab(
+        row_number, "docket_family", row.get("docket_family"), DOCKET_FAMILIES
+    )
+    if docket_family is None:
+        docket_family = classify_family(docket.canonical)
+
     matter: dict[str, object] = {
         "applicant": _text(row.get("applicant")),
         "facility": _text(row.get("facility")),
@@ -349,6 +411,28 @@ def shape_row(row: dict, row_number: int = 0) -> ShapedRow:
         ),
         "highest_review_level": highest_review_level,
         "completeness_flags": json.dumps(completeness_flags) if completeness_flags else None,
+        "contact_officer": _text(row.get("contact_officer")),
+        "project_description": _text(row.get("project_description")),
+        "estimated_cost": _parse_money(
+            row_number, "estimated_cost", row.get("estimated_cost")
+        ),
+        "primary_service_area": (
+            json.dumps(primary_service_area) if primary_service_area else None
+        ),
+        "docket_family": docket_family,
+        "letter_of_intent_date": _parse_date(
+            row_number, "letter_of_intent_date", row.get("letter_of_intent_date")
+        ),
+        "deemed_complete_date": _parse_date(
+            row_number, "deemed_complete_date", row.get("deemed_complete_date")
+        ),
+        "decision_deadline": _parse_date(
+            row_number, "decision_deadline", row.get("decision_deadline")
+        ),
+        "batching_cycle": _text(row.get("batching_cycle")),
+        "competing_docket_ids": (
+            json.dumps(competing_docket_ids) if competing_docket_ids else None
+        ),
     }
 
     docview_url = _text(row.get("docview_url")) or DOCVIEW_URL_TEMPLATE.format(
@@ -383,6 +467,10 @@ def shape_row(row: dict, row_number: int = 0) -> ShapedRow:
             row_number, "validated_date", row.get("validated_date")
         ),
         "duplicate_of": _parse_int(row_number, "duplicate_of", row.get("duplicate_of")),
+        "title": _text(row.get("title")),
+        "text_source": _vocab(
+            row_number, "text_source", row.get("text_source"), TEXT_SOURCES
+        ),
     }
 
     return ShapedRow(
@@ -413,6 +501,16 @@ _MATTER_COLS: tuple[str, ...] = (
     "final_decision_date",
     "highest_review_level",
     "completeness_flags",
+    "contact_officer",
+    "project_description",
+    "estimated_cost",
+    "primary_service_area",
+    "docket_family",
+    "letter_of_intent_date",
+    "deemed_complete_date",
+    "decision_deadline",
+    "batching_cycle",
+    "competing_docket_ids",
 )
 
 MATTER_MERGE_SQL = (
@@ -452,6 +550,8 @@ _DOC_COALESCE_COLS: tuple[str, ...] = (
     "ocr_status",
     "ocr_confidence",
     "duplicate_of",
+    "title",
+    "text_source",
 )
 _DOC_DIRECT_COLS: tuple[str, ...] = ("validation_status", "validated_by", "validated_date")
 _DOC_COLS: tuple[str, ...] = _DOC_COALESCE_COLS + _DOC_DIRECT_COLS

@@ -1,7 +1,11 @@
 # Copilot Studio — "GA CON Research Assistant"
 
 A Copilot Studio agent that answers natural-language questions about CON
-matters/documents with mandatory citations (docket + entry + DocView link).
+matters/documents with mandatory citations (docket + entry + DocView link)
+**plus deep links into the research console** — the console (`web/`, Static Web
+Apps Free) is the primary researcher UI, so the agent points users there to
+keep reading: `/docket/{docket_id}` for a matter's timeline,
+`/document/{entry_id}` for the case reader.
 Instructions text: [`agent-instructions.md`](agent-instructions.md).
 
 **Prerequisite**: the Graph connector connection from
@@ -37,16 +41,20 @@ crawl — it is the agent's knowledge source.
 
 ### 1. Create the agent
 
-1. Go to https://copilotstudio.microsoft.com, pick the same **environment**
-   you use for the Power App (or default).
+1. Go to https://copilotstudio.microsoft.com, pick an **environment** (the
+   default environment is fine — the retired Power App no longer dictates
+   environment choice).
 2. **+ Create > New agent**. Skip the describe-it conversation ("Configure"
    tab / "Skip to configure") and fill fields directly:
    - **Name**: `GA CON Research Assistant`
    - **Description**: `Research assistant for Georgia DCH Certificate of Need
      matters and documents. Cites docket, entry ID, and DocView link for every
-     claim.`
+     claim, with deep links into the CON Research Console.`
    - **Instructions**: paste the block from
-     [`agent-instructions.md`](agent-instructions.md).
+     [`agent-instructions.md`](agent-instructions.md) — **after replacing the
+     `https://<console-host>` placeholder** with your console's real origin
+     (the Static Web App URL; same value as the API's `CONSOLE_ORIGIN`
+     setting).
 3. **Create**. On the agent's Overview page, turn **Web browsing OFF** and
    leave general-knowledge fallback off — the instructions require
    data-grounded answers only. (If your UI shows "Use general knowledge",
@@ -69,6 +77,13 @@ Per [Add Copilot connectors as a knowledge source](https://learn.microsoft.com/m
    M365 Copilot license in-tenant — E7 satisfies this) and confirm the
    connector's `title`/`url` labels were mapped (done in the graph-connector
    guide) — those drive the citations the agent renders.
+   **Console deep links**: the connector item's `url` is the DocView link, so
+   that is what rendered citations open. On top of that, the instructions have
+   the agent *compose* research-console links from the ids in retrieved
+   records — `https://<console-host>/document/{entry_id}` and
+   `https://<console-host>/docket/{docket_id}` — as the canonical "keep
+   researching here" target, because the console adds the docket timeline,
+   citator, and reader context that DocView lacks.
 5. **Authentication note for channels**: when you publish with manual/custom
    authentication settings, the `ExternalItem.Read.All` delegated scope must be
    included or connector knowledge returns nothing
@@ -125,6 +140,10 @@ Run these in the Test pane before publishing, and again in Teams after:
   answer cites docket IDs + DocView links from `GA CON Records`.
 - [ ] **Entry citations**: "Show me the hearing officer decision for
   <docket>" — cites the entry_id and link, not just the docket.
+- [ ] **Console deep links**: answers include a console link built from the
+  cited ids — `https://<console-host>/document/{entry_id}` or
+  `https://<console-host>/docket/{docket_id}` — and the ids in the URL match
+  the ids in the citation (no invented ids).
 - [ ] **Validation flag**: ask about a record you know is Unvalidated —
   answer carries "unvalidated — verify against source".
 - [ ] **Vocabulary**: "Which matters were greenlit in Fulton County?" — the
@@ -136,7 +155,8 @@ Run these in the Test pane before publishing, and again in Teams after:
   offers records research.
 - [ ] **Approval-rate definition**: "What share of 2024 applications were
   approved?" — states the approved/decided definition from the instructions.
-- [ ] **Freshness**: validate a document via the Power App, wait one
-  incremental crawl (~15 min), ask again — the unvalidated warning is gone.
+- [ ] **Freshness**: validate a document in the console's validation screen,
+  wait one incremental crawl (~15 min), ask again — the unvalidated warning
+  is gone.
 - [ ] (If API tool added) "Exactly how many matters are pending in DeKalb?" —
   tool call fires against `GET /matters` rather than hallucinating a count.

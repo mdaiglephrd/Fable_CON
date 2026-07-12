@@ -5,9 +5,7 @@ parameterized; column names come only from fixed whitelist maps, never from
 user input. Auth is platform-level (App Service Easy Auth / Entra) — none here.
 """
 
-import json
 import os
-from collections.abc import Iterator
 from datetime import date, datetime
 from typing import Any
 
@@ -16,6 +14,26 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, model_validator
 
 from api import semantic
+from api.deps import (
+    get_db,
+    parse_json_field as _parse_json_field,
+    query as _query,
+    resolve_docket as _resolve_docket,
+    scalar as _scalar,
+)
+from api.routers import (
+    alerts,
+    cases,
+    citator,
+    deadlines,
+    history,
+    proceeding,
+    projects,
+    stats,
+    statutes,
+    topics,
+    wiki,
+)
 from api.search_client import ConfigurationError
 from common import vocab
 from common.docket import normalize_docket
@@ -25,66 +43,28 @@ app = FastAPI(
     description="Georgia Certificate of Need matters, documents, and weekly-report events.",
 )
 
+# CORS for the research console (web/ on Static Web Apps). CONSOLE_ORIGIN is a
+# comma-separated origin allow-list set by infra (the SWA hostname); absent =
+# same-origin only, no CORS headers.
+_console_origins = [o.strip() for o in os.environ.get("CONSOLE_ORIGIN", "").split(",") if o.strip()]
+if _console_origins:
+    from fastapi.middleware.cors import CORSMiddleware
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_console_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["*"],
+    )
+
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
 
 
 # ---------------------------------------------------------------------------
-# DB plumbing
-# ---------------------------------------------------------------------------
-
-
-def get_db() -> Iterator[Any]:
-    """Yield a live DB connection. Tests override this with a FakeConnection.
-
-    common.db (and pyodbc) is imported lazily so the app imports cleanly in
-    environments without ODBC libraries or SQL_* configuration.
-    """
-    from common import db
-
-    conn = db.get_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
-
-
-def _rows_to_dicts(cursor: Any) -> list[dict[str, Any]]:
-    if not cursor.description:
-        return []
-    columns = [col[0] for col in cursor.description]
-    return [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-
-def _query(conn: Any, sql: str, params: list[Any]) -> list[dict[str, Any]]:
-    cursor = conn.cursor()
-    if params:
-        cursor.execute(sql, params)
-    else:
-        cursor.execute(sql)
-    return _rows_to_dicts(cursor)
-
-
-def _scalar(conn: Any, sql: str, params: list[Any]) -> Any:
-    cursor = conn.cursor()
-    if params:
-        cursor.execute(sql, params)
-    else:
-        cursor.execute(sql)
-    row = cursor.fetchone()
-    return row[0] if row else None
-
-
-def _parse_json_field(row: dict[str, Any], field: str) -> None:
-    """Parse a JSON text column to a list/object in place (None on bad JSON)."""
-    value = row.get(field)
-    if isinstance(value, str):
-        try:
-            row[field] = json.loads(value)
-        except ValueError:
-            row[field] = None
-
-
+# DB plumbing — get_db/_query/_scalar/_parse_json_field/_resolve_docket live in
+# api/deps.py (shared with api/routers/*) and are imported above unchanged.
 # ---------------------------------------------------------------------------
 # Filter / sort whitelists (column names NEVER come from user input)
 # ---------------------------------------------------------------------------
@@ -399,44 +379,6 @@ def list_matters(
     for row in result["items"]:
         _parse_json_field(row, "completeness_flags")
     return result
-
-
-def _resolve_docket(conn: Any, raw: str) -> str:
-    """Resolve a path docket param (any variant form) to the owning matter id.
-
-    Tries the canonical form (via normalize_docket) and the raw string against
-    con.matter, then against con.matter_docket_variant. Raises 404 otherwise.
-    """
-    match = normalize_docket(raw)
-    candidates: list[str] = []
-    for candidate in ([match.canonical, *match.variants] if match else []) + [raw.strip()]:
-        if candidate and candidate not in candidates:
-            candidates.append(candidate)
-    placeholders = ", ".join("?" for _ in candidates)
-
-    found = _scalar(
-        conn,
-        f"SELECT docket_id FROM con.matter WHERE docket_id IN ({placeholders})",
-        candidates,
-    )
-    if found:
-        return found
-    found = _scalar(
-        conn,
-        "SELECT DISTINCT docket_id FROM con.matter_docket_variant "
-        f"WHERE variant IN ({placeholders})",
-        candidates,
-    )
-    if found:
-        return found
-    canonical_note = f" (canonical form {match.canonical!r})" if match else ""
-    raise HTTPException(
-        status_code=404,
-        detail=(
-            f"No matter found for docket {raw!r}{canonical_note}; "
-            "checked con.matter and con.matter_docket_variant."
-        ),
-    )
 
 
 @app.get("/matters/{docket_id}")
@@ -867,6 +809,22 @@ def report_events(
 # ---------------------------------------------------------------------------
 
 app.include_router(semantic.router)
+
+# Research-layer routers (DESIGN.md "RESEARCH LAYER (v2)").
+for _research_router in (
+    cases.router,
+    proceeding.router,
+    citator.router,
+    topics.router,
+    statutes.router,
+    history.router,
+    stats.router,
+    deadlines.router,
+    projects.router,
+    alerts.router,
+    wiki.router,
+):
+    app.include_router(_research_router)
 
 
 @app.exception_handler(ConfigurationError)

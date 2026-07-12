@@ -1,0 +1,123 @@
+/*
+ * Design tokens — Georgia CON Research Console.
+ * Verbatim from web/design-reference/README.md ("Design Tokens") and the
+ * <helmet><style> block of georgia-con-research.dc.html.
+ */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+  color: #e2e8f0; /* body text on dark shell prior to theme resolution */
+  background: #020617;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Dark theme (default) */
+[data-theme='dark'] {
+  --page-bg: #020617;
+  --surface: #0f172a;
+  --surface2: #1e293b;
+  --border2: #334155;
+  --text: #f8fafc;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --accent-text: #f43f5e;
+  --sel-bg: #f59e0b;
+  --sel-fg: #020617;
+}
+
+/* Light theme */
+[data-theme='light'] {
+  --page-bg: #f7f4ea;
+  --surface: #ffffff;
+  --surface2: #f1ecdd;
+  --border2: #d9d2c0;
+  --text: #181410;
+  --text2: #5f5950;
+  --text3: #8a8472;
+  --accent-text: #8e1b1f;
+  --sel-bg: #8e1b1f;
+  --sel-fg: #ffffff;
+}
+
+[data-theme] {
+  background: var(--page-bg);
+  color: var(--text);
+}
+
+::selection {
+  background: var(--sel-bg);
+  color: var(--sel-fg);
+}
+
+:root {
+  /* Fixed (non-themed) brand/status colors used across both themes */
+  --brand-red: #8e1b1f;
+  --brand-red-hover: #a82127;
+  --status-complete: #10b981;
+  --status-complete-bg: rgba(16, 185, 129, 0.12);
+  --status-active: #f59e0b;
+  --status-active-bg: rgba(245, 158, 11, 0.12);
+  --status-denied: #f43f5e;
+  --status-denied-bg: rgba(244, 63, 94, 0.12);
+  --status-pending: #94a3b8;
+  --status-neutral: #64748b;
+  --status-current: #3b82f6;
+  --status-current-bg: rgba(59, 130, 246, 0.12);
+
+  /* Typography */
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Radii — small throughout */
+  --radius-xs: 2px; /* buttons, inputs */
+  --radius-sm: 4px;
+  --radius-md: 5px; /* menus/cards */
+  --radius-round: 50%; /* avatars/dots */
+
+  /* Shadows */
+  --shadow-dropdown: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --shadow-searchbar: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
