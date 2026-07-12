@@ -161,7 +161,7 @@ module sql 'modules/sql.bicep' = {
   params: {
     serverName: '${baseName}-sql'
     databaseName: sqlDatabaseName
-    sqlLocation: 'centralus'
+    sqlLocation: location
     location: location
     tags: tags
     adminLogin: sqlAdminLogin
