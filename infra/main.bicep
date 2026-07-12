@@ -159,7 +159,7 @@ module keyVault 'modules/keyvault.bicep' = {
 module sql 'modules/sql.bicep' = {
   name: 'sql'
   params: {
-    serverName: '${baseName}-sql'
+    serverName: '${baseName}-sql2'
     databaseName: sqlDatabaseName
     sqlLocation: 'centralus'
     location: location
