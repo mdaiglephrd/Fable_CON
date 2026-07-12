@@ -209,7 +209,16 @@ def test_main_with_injected_connection_applies_real_migrations():
 
 def test_real_migration_files_split_into_nonempty_batches():
     files = sorted(MIGRATIONS_DIR.glob("*.sql"))
-    assert len(files) == 5
+    # v1 shipped five migrations; the research layer (v2) adds 0006+.
+    names = {f.name for f in files}
+    assert {
+        "0001_schema_and_vocab.sql",
+        "0002_core_tables.sql",
+        "0003_operational_tables.sql",
+        "0004_indexes.sql",
+        "0005_fulltext.sql",
+    } <= names
+    assert len(files) >= 5
     for f in files:
         batches = split_batches(f.read_text(encoding="utf-8"))
         assert batches, f"{f.name} produced no batches"
@@ -218,3 +227,131 @@ def test_real_migration_files_split_into_nonempty_batches():
             assert not any(
                 line.strip().upper() == "GO" for line in batch.splitlines()
             ), f"unsplit GO left inside a batch of {f.name}"
+
+
+# ------------------------------------------- research layer (v2) migrations
+
+# Research-layer files. 0009 (deadline_rules seed) is owned separately; the
+# filesystem-dependent checks below tolerate its absence, while the pure
+# pending()/ordering check exercises the full 0001-0009 sequence.
+RESEARCH_MIGRATIONS = [
+    "0006_research_tables.sql",
+    "0007_research_vocab.sql",
+    "0008_topic_taxonomy.sql",
+]
+
+
+def test_research_migrations_0006_0008_exist():
+    names = {f.name for f in MIGRATIONS_DIR.glob("*.sql")}
+    for name in RESEARCH_MIGRATIONS:
+        assert name in names, f"missing research migration {name}"
+
+
+def test_research_migration_files_split_into_nonempty_batches():
+    present = [MIGRATIONS_DIR / n for n in RESEARCH_MIGRATIONS if (MIGRATIONS_DIR / n).exists()]
+    # 0009 is optional (authored by another agent); include it when present.
+    ninth = MIGRATIONS_DIR / "0009_deadline_rules.sql"
+    if ninth.exists():
+        present.append(ninth)
+    assert present, "no research migrations found"
+    for f in present:
+        batches = split_batches(f.read_text(encoding="utf-8"))
+        assert batches, f"{f.name} produced no batches"
+        for batch in batches:
+            assert batch.strip()
+            assert not any(
+                line.strip().upper() == "GO" for line in batch.splitlines()
+            ), f"unsplit GO left inside a batch of {f.name}"
+            # balanced-ish: no unmatched parentheses inside a batch.
+            assert batch.count("(") == batch.count(")"), f"unbalanced () in a batch of {f.name}"
+
+
+def test_pending_orders_full_0001_through_0009_sequence():
+    # Pure ordering check: 0006-0009 must sort after 0001-0005 by filename.
+    shuffled = [
+        "0009_deadline_rules.sql",
+        "0002_core_tables.sql",
+        "0006_research_tables.sql",
+        "0001_schema_and_vocab.sql",
+        "0008_topic_taxonomy.sql",
+        "0004_indexes.sql",
+        "0007_research_vocab.sql",
+        "0003_operational_tables.sql",
+        "0005_fulltext.sql",
+    ]
+    assert pending(set(), shuffled) == [
+        "0001_schema_and_vocab.sql",
+        "0002_core_tables.sql",
+        "0003_operational_tables.sql",
+        "0004_indexes.sql",
+        "0005_fulltext.sql",
+        "0006_research_tables.sql",
+        "0007_research_vocab.sql",
+        "0008_topic_taxonomy.sql",
+        "0009_deadline_rules.sql",
+    ]
+
+
+def test_0006_creates_expected_research_tables():
+    sql = (MIGRATIONS_DIR / "0006_research_tables.sql").read_text(encoding="utf-8")
+    for table in (
+        "con.document_text",
+        "con.opinion",
+        "con.opinion_paragraph",
+        "con.reporter_citation",
+        "con.headnote",
+        "con.topic",
+        "con.document_topic",
+        "con.citation",
+        "con.counsel",
+        "con.brief",
+        "con.proceeding_stage",
+        "con.docket_event",
+        "con.statute",
+        "con.statute_xref",
+        "con.wiki_article",
+        "con.wiki_revision",
+        "con.research_project",
+        "con.project_item",
+        "con.saved_alert",
+        "con.deadline_rule",
+    ):
+        assert f"CREATE TABLE {table} (" in sql, f"0006 missing CREATE TABLE {table}"
+    # The five new vocab tables are created (empty) in 0006 so FKs resolve.
+    for vocab in (
+        "con.vocab_treatment",
+        "con.vocab_docket_family",
+        "con.vocab_event_type",
+        "con.vocab_counsel_side",
+        "con.vocab_treatment_level",
+    ):
+        assert f"CREATE TABLE {vocab} (" in sql, f"0006 missing vocab table {vocab}"
+    # Existing tables are extended, not recreated.
+    assert "ALTER TABLE con.matter ADD" in sql
+    assert "ALTER TABLE con.document ADD" in sql
+    # Self-referencing FKs must not cascade.
+    assert "FK_topic_parent" in sql
+    assert "FK_statute_xref_from" in sql
+
+
+def test_0007_seeds_new_vocabularies():
+    sql = (MIGRATIONS_DIR / "0007_research_vocab.sql").read_text(encoding="utf-8")
+    for code in ("Followed", "Overruled", "DET-EQT", "LNR-ASC", "Amicus", "positive", "neutral"):
+        assert code in sql, f"0007 missing vocab code {code}"
+    for table in (
+        "con.vocab_treatment",
+        "con.vocab_docket_family",
+        "con.vocab_event_type",
+        "con.vocab_counsel_side",
+        "con.vocab_treatment_level",
+    ):
+        assert f"INSERT INTO {table}" in sql
+
+
+def test_0008_seeds_topic_taxonomy_roots_and_leaves():
+    sql = (MIGRATIONS_DIR / "0008_topic_taxonomy.sql").read_text(encoding="utf-8")
+    assert "INSERT INTO con.topic" in sql
+    for topic_id in ("iii-7", "iv-11", "iv-12", "iv-13", "iv-15", "v-21", "vi-24", "vi-25"):
+        assert f"N'{topic_id}'" in sql, f"0008 missing leaf topic {topic_id}"
+    for key_number in ("CON I", "CON VII", "CON VI · 24"):
+        assert key_number in sql, f"0008 missing key_number {key_number}"
