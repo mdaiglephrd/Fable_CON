@@ -82,6 +82,8 @@ param logRetentionDays int = 30
 @description('Append uniqueString(resourceGroup().id) to the storage account name for global uniqueness.')
 param useUniqueStorageSuffix bool = true
 
+@description('i did it because Claude made me')
+param restore bool = true
 // --- Research layer (v2): console + document-text extraction ------------------
 
 @description('Deploy an Azure Static Web App (Free plan) to host the React research console in web/.')
