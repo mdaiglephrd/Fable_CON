@@ -13,6 +13,9 @@ param databaseName string
 @description('Azure region.')
 param location string
 
+@description('Azure region.')
+param sqlLocation string
+
 @description('Tags applied to all resources.')
 param tags object = {}
 
@@ -50,7 +53,7 @@ param freeLimitExhaustionBehavior string = 'AutoPause'
 
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01' = {
   name: serverName
-  location: location
+  location: sqlLocation
   tags: tags
   properties: {
     version: '12.0'
