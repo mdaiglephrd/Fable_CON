@@ -1,5 +1,37 @@
 # Power Apps canvas app — CON browse & validation
 
+> ## RETIRED — replaced by the CON Research Console
+>
+> **This app is retired. Do not build it.** Its three screens are replaced in
+> full by the **CON Research Console** — the React SPA in `web/`, hosted on
+> **Azure Static Web Apps (Free)** with Entra ID sign-in, backed by the repo's
+> FastAPI (build guide: `docs/06-research-console-buildout.md`; contract:
+> `DESIGN.md` "RESEARCH LAYER (v2)").
+>
+> Why it was retired:
+>
+> - **Better UX.** The console gives researchers one application for search,
+>   the case reader, citator, docket timelines, stats, *and* the validation
+>   queue — instead of a separate three-screen canvas app covering only
+>   browse/detail/validate.
+> - **Removes the premium-connector license requirement.** This app's SQL
+>   Server connector is a **premium** Power Platform connector (verified
+>   citations in the Licensing section below), so every user needed a Power
+>   Apps Premium / per-app / pay-as-you-go license on top of E7. The console
+>   runs on Static Web Apps Free plus the existing API — no Power Platform
+>   license involved. This is exactly the "license-free alternative" the
+>   Licensing section below already recommended: validation edits through a
+>   web app served by the FastAPI backend.
+>
+> Validation writes now flow **console → FastAPI → `con.document`** (same
+> columns — `validation_status`, `validated_by`, `validated_date` — and the
+> same SQL audit trail; see `../purview/governance.md` §6 and §8).
+>
+> Everything below, **including the `screens/*.fx.md` files, is kept for
+> historical reference only** — it documents the licensing analysis that
+> motivated the retirement and what the screens did, so the console's
+> validation UX can be checked against it. Do not follow it as a build guide.
+
 A tablet-layout canvas app with three screens over the `con` schema:
 
 | Screen | File | Purpose |

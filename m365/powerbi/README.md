@@ -124,3 +124,29 @@ Configure the schedule for 8 slots spread across the working day (e.g. 06:00, 08
 - Share the report/app to colleagues: they need Power BI Pro too — every E7 user has
   it. Guests or unlicensed users would need licenses or Premium capacity
   (extra purchase).
+
+## Research layer (v2) tables — richer dashboards
+
+Additive note: the research layer (DESIGN.md "RESEARCH LAYER (v2)", migrations
+0006+) adds content tables the model above does not import — most usefully
+`con.opinion` (decision metadata: decided dates, published flag, treatment
+level), `con.citation` (the citator graph: who cites whom, with a `treatment`
+code), and `con.proceeding_stage` (per-docket stage history with outcomes and
+durations). Once the editorial pass populates them, add them as Import-mode
+queries (same pattern as `queries.pq`) for measures such as:
+
+- **Reversal rate** — of matters that reach an appellate/judicial-review stage
+  in `con.proceeding_stage`, the share whose stage outcome is
+  `Reversed (appeal)` (optionally counting `Vacated (appeal)` — state the
+  definition on the visual, as the existing measures do for approval rate).
+- **Citator treatment mix** — count of `con.citation` rows by `treatment`
+  (Followed / Distinguished / Criticized / Reversed / Overruled / Cited /
+  Neutral), sliced by the cited document's year or topic — a health check on
+  which decisions the corpus still relies on.
+- **Stage duration** — median `duration_days` by `stage_label` from
+  `con.proceeding_stage`, sliceable by service type or county — how long each
+  phase of a proceeding actually takes.
+
+Deliberately left as suggestions rather than shipped DAX: these tables fill
+during the editorial pass, so build and validate the measures once the data is
+real.

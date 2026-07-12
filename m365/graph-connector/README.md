@@ -4,6 +4,12 @@ Puts CON matters/documents into the Microsoft Graph index so they surface in
 **Microsoft Search** (Office.com, SharePoint, Bing work results) and ground
 **Microsoft 365 Copilot** and the Copilot Studio agent (`../copilot-studio/`).
 
+With the research console (`web/`) as the primary researcher UI, this connector
+remains the **natural-language search path**: it is what lets Microsoft Search,
+Copilot Chat, and the agent answer questions over the same data at no metered
+cost — preferred over the API's Azure OpenAI-backed `/ask` endpoint
+(E7-first principle, `../README.md`).
+
 > Naming: Microsoft renamed "Microsoft Graph connectors" to **"Microsoft 365
 > Copilot connectors"**. Admin center labels vary by tenant ring: you may see
 > **Search & intelligence > Data sources** or **Copilot > Data connections**.
@@ -114,6 +120,17 @@ aren't in the view; they're still reachable through the API/Power BI. If you
 want them searchable too, that is Path B territory or a second connection over
 a matter-level view.)
 
+> **Research layer — candidate columns for a v2 of the view.** The research
+> layer (DESIGN.md "RESEARCH LAYER (v2)", migrations 0006+) adds two columns
+> worth folding into a future `con.search_view` v2 once the editorial pass
+> populates them: `con.opinion.editorial_synopsis` (a searchable synopsis for
+> decision documents) and `con.document.title` (editorial title — a better
+> headline than the file-name fallback in the computed `title` above,
+> e.g. `COALESCE(NULLIF(d.title, N''), d.file_name, ...)`). Hold off until the
+> data is real — NULL-heavy columns add nothing to the crawl. When you add
+> them, mark the synopsis Searchable (not refinable) in Step 5 and run a full
+> crawl to backfill.
+
 ### Step 1 — Entra app registration (for the connector's DB access)
 
 1. Entra admin center (entra.microsoft.com) > **App registrations > New
@@ -173,8 +190,9 @@ ORDER BY updatedAt ASC
 ### Step 4 — incremental crawl query (optional but recommended)
 
 Same query, same watermark column (`updatedAt`). Because `updatedAt` already
-reflects both matter and document updates, edits made by the validation Power
-App and the tag/diff loaders appear in search within one incremental cycle.
+reflects both matter and document updates, edits made through the console's
+validation screens (console → API → SQL) and by the tag/diff loaders appear in
+search within one incremental cycle.
 No soft-delete column exists in scope (deleted repo docs are only logged in
 `con.change_log`, never deleted from `con.document` per DESIGN.md), so skip the
 soft-delete settings; the daily full crawl trues everything up.

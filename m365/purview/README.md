@@ -15,10 +15,14 @@ It covers, per capability and using only what Microsoft 365 E7 includes:
    retention schedules (none are invented here).
 4. **Data Map / Unified Catalog** — registering and scanning the Azure SQL
    database.
-5. **Audit** — Purview Audit plus Azure SQL auditing for the Power App
-   validation actions.
+5. **Audit** — Purview Audit plus Azure SQL auditing for validation actions
+   (which now flow console → API → SQL).
 6. **AI-agent governance** — DSPM for AI, Communication Compliance, Agent 365,
    and the Defender-for-AI angle for the Copilot Studio agent.
+7. **The research console + API as governed surfaces** — Entra Conditional
+   Access for the Static Web App and App Service sign-ins, the audit trail for
+   console-driven validation writes, and DSPM-for-AI coverage of the agent's
+   console deep links (governance.md §8).
 
 Each section in governance.md states **What to configure**, **Exact steps**,
 and **E7 coverage** (covered vs extra cost).
