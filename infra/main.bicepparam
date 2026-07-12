@@ -13,8 +13,8 @@ param environment = 'dev'
 // Object ID + display name of the user or group that administers the SQL server.
 //   group: az ad group show --group <name> --query id -o tsv
 //   user:  az ad signed-in-user show --query id -o tsv
-param sqlAdminObjectId = '<your-entra-admin-object-id>'
-param sqlAdminLogin = '<your-entra-admin-login>' // e.g. 'gacon-sql-admins' or 'admin@contoso.com'
+param sqlAdminObjectId = 'f5c31594-e092-4b56-8fb5-85ecc13c6b96'
+param sqlAdminLogin = 'gacon-sql-admins' // e.g. 'gacon-sql-admins' or 'admin@contoso.com'
 param sqlAdminPrincipalType = 'Group' // 'User' | 'Group' | 'Application'
 
 // --- Options ------------------------------------------------------------------
@@ -35,4 +35,4 @@ param deployStaticWebApp = true // Azure Static Web App (Free) for the React con
 param deployDocIntel = true // Azure AI Document Intelligence for the document-text step
 param docIntelSku = 'F0' // 'F0' free (500 pages/mo) | 'S0' standard (for the initial corpus backfill)
 param sqlUseFreeOffer = true // Azure SQL Database free offer (GP serverless free monthly limits)
-// param appServicePlanSku = 'F1' // F1 = free pilot (60 CPU-min/day, no Always-On); default B1 (~$13/mo)
+param appServicePlanSku = 'F1' // F1 = free pilot (60 CPU-min/day, no Always-On); default B1 (~$13/mo)
