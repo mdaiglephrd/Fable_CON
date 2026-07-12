@@ -14,7 +14,7 @@ param environment = 'dev'
 //   group: az ad group show --group <name> --query id -o tsv
 //   user:  az ad signed-in-user show --query id -o tsv
 param sqlAdminObjectId = 'f5c31594-e092-4b56-8fb5-85ecc13c6b96'
-param sqlAdminLogin = 'gacon-sql-admins' // e.g. 'gacon-sql-admins' or 'admin@contoso.com'
+param sqlAdminLogin = 'mdai@phrd.com' // e.g. 'gacon-sql-admins' or 'admin@contoso.com'
 param sqlAdminPrincipalType = 'Group' // 'User' | 'Group' | 'Application'
 
 // --- Options ------------------------------------------------------------------
