@@ -205,7 +205,6 @@ module staticWebApp 'modules/staticwebapp.bicep' = if (deployStaticWebApp) {
     staticWebAppName: '${baseName}-web'
     location: staticWebAppLocation
     tags: tags
-    sku: 'Free'
   }
 }
 
