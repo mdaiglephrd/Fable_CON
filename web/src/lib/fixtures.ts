@@ -115,14 +115,14 @@ export function findingColor(f: string | null | undefined): string {
         : 'var(--text2)';
 }
 
-// Case id <-> docket number mapping (mirrors the comp's CASE_TO_NUM).
+// Case id <-> docket number mapping (mirrors the comp's CASE_TO_NUM;
+// coastal-empire has no entry on the live docket roll, matching the comp).
 export const CASE_TO_NUM: Record<string, string> = {
   'riverstone-imaging': '2026007',
   'three-rivers': '2026002',
   magnolia: '2026004',
   northridge: '2025028',
   cobblestone: '2025017',
-  'coastal-empire': '2025017', // no live roll entry — nearest companion docket
 };
 
 export interface FixtureProceeding extends Proceeding {
@@ -504,7 +504,9 @@ export const RESULT_CARDS: ResultCard[] = [
     rank: 6,
     score: '82%',
     caseId: 'coastal-empire',
-    docketId: '2025017',
+    // No docket-roll entry for CON 21-0044; the comp routes this card's
+    // Docket View to the featured Riverstone console.
+    docketId: 'riverstone-imaging',
     dktType: 'CON',
     dktNum: 'CON 21-0044',
     docType: 'Court of Appeals · Opinion',
