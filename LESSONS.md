@@ -3,6 +3,28 @@
 One lesson per entry: a one-line summary, then why it mattered. Update entries
 in place rather than adding duplicates.
 
+- **The research console is the primary UI; Power Apps is retired, not deleted.**
+  The design handoff superseded the Power Apps browse/validation screens — keeping the
+  console primary avoids the Power Apps premium-connector license entirely, and the old
+  artifacts stay in `m365/powerapp/` as marked reference so the decision is auditable.
+
+- **Ported engines are held to golden parity, not re-implementation judgment.**
+  `common/proceeding.py` and `web/src/lib/docketEngine.ts` must deep-equal fixtures
+  generated from the real `docket-engine.js` (including its seeded pseudo-random
+  precedent hash and en-US date strings). Byte-equal goldens caught drift that
+  "looks right" review never would.
+
+- **Free-tier levers are parameters, not forks.**
+  SQL free offer, Doc Intelligence F0/S0, App Service F1/B1, deploySearch/deployOpenAI
+  are all Bicep params with free defaults — one template serves the $0 pilot and the
+  paid steady state, and docs/06 documents the outgrow ladder instead of a second stack.
+
+- **Analytical legal fields are editorial data, not extraction targets.**
+  Headnotes, treatment flags, topic keys, and synopses ride the existing
+  validation_status workflow (entered in the console, flagged until Validated);
+  docs/05 encodes the T/X/E/D split so ingestion never pretends a machine decided
+  what only an editor can.
+
 - **GA-####### is treated as a legacy variant of CON-####### — an assumption, not a fact.**
   The spec says legacy `GA-#######` ids are "embedded in names" and the digit count
   matches CON numbering, so `common/docket.py` canonicalizes GA→CON (constant
