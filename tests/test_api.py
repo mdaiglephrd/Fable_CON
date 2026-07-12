@@ -545,3 +545,20 @@ def test_event_row_shapes_to_search_doc():
     assert doc["doc_date"] == "2026-06-26T00:00:00Z"
     assert "Project description: Add 12 NICU beds" in doc["content"]
     assert "Weekly report section: APPROVED" in doc["content"]
+
+
+def test_console_origin_env_enables_cors(monkeypatch):
+    """CONSOLE_ORIGIN wires CORSMiddleware for the research console origin."""
+    import importlib
+
+    import api.main as api_main_module
+    from fastapi.middleware.cors import CORSMiddleware
+
+    monkeypatch.setenv("CONSOLE_ORIGIN", "https://console.example.net")
+    try:
+        reloaded = importlib.reload(api_main_module)
+        assert any(mw.cls is CORSMiddleware for mw in reloaded.app.user_middleware)
+    finally:
+        monkeypatch.delenv("CONSOLE_ORIGIN")
+        restored = importlib.reload(api_main_module)
+        assert not any(mw.cls is CORSMiddleware for mw in restored.app.user_middleware)

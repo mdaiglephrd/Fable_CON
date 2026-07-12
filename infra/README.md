@@ -17,8 +17,8 @@ environment `dev`), tagged `{ project: 'ga-con-database', environment: <env> }`.
 | Key Vault | `gacon-dev-kv` | standard, RBAC, soft delete | ~$0.03/10k operations; <$1 |
 | SQL logical server + `condb` | `gacon-dev-sql` | GP_S_Gen5_1 serverless, auto-pause 60 min, 32 GB max | ~$0.52/vCore-hour while active + ~$0.12/GB storage; $5–30 for intermittent research use (auto-pause keeps idle compute at $0) |
 | Function app + Y1 plan | `gacon-dev-func` | Linux Consumption, Python 3.11 | free grant covers this workload; $0–2 |
-| Web app + B1 plan (FastAPI `api/`) | `gacon-dev-api` | Linux Basic B1, Python 3.11 | ~$13 |
-| Azure AI Search (`deploySearch=true`) | `gacon-dev-search` | basic, semantic ranker `free` | ~$75 — the biggest fixed cost; set `deploySearch=false` to skip |
+| Web app + plan (FastAPI `api/`) | `gacon-dev-api` | Linux, Python 3.11; `appServicePlanSku` `B1` default or `F1` (Free — pilot; 60 CPU-min/day, no Always-On) | ~$13 on B1 / $0 on F1 |
+| Azure AI Search (`deploySearch`, default **false**) | `gacon-dev-search` | basic, semantic ranker `free` | ~$75 — the biggest fixed cost; off by default (SQL full-text covers keyword search) |
 | Azure OpenAI (`deployOpenAI=false` by default) | `gacon-dev-aoai` | S0; `gpt-4o-mini` + `text-embedding-3-small` Standard deployments | per-token (gpt-4o-mini ≈ $0.15/1M input, $0.60/1M output; embeddings ≈ $0.02/1M) |
 | Static Web App (`deployStaticWebApp=true`) | `gacon-dev-web` | **Free** plan (Microsoft.Web/staticSites) | **$0** — hosts the React console (`web/`); Free plan includes Entra ID auth |
 | Document Intelligence (`deployDocIntel=true`) | `gacon-dev-di` | `docIntelSku` **F0** (free) by default | **$0** at F0 (500 pages/month cap); S0 ≈ $1.50/1,000 pages for the initial backfill |
@@ -28,9 +28,10 @@ environment `dev`), tagged `{ project: 'ga-con-database', environment: <env> }`.
 
 ## Free-tier-first cost posture
 
-This deployment is tuned to stay at or near **$0** for intermittent research use. The
-only unavoidable fixed cost is the App Service B1 plan (~$13/mo); everything else has a
-free tier or free monthly grant:
+This deployment is tuned to stay at or near **$0** for intermittent research use.
+Every component has a free tier or free monthly grant (the App Service defaults to
+B1 ~$13/mo for steady state, but `appServicePlanSku='F1'` makes even that $0 for
+pilot use):
 
 | Component | Free lever | Notes / honest caveats |
 | --- | --- | --- |

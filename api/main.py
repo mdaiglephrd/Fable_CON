@@ -43,6 +43,21 @@ app = FastAPI(
     description="Georgia Certificate of Need matters, documents, and weekly-report events.",
 )
 
+# CORS for the research console (web/ on Static Web Apps). CONSOLE_ORIGIN is a
+# comma-separated origin allow-list set by infra (the SWA hostname); absent =
+# same-origin only, no CORS headers.
+_console_origins = [o.strip() for o in os.environ.get("CONSOLE_ORIGIN", "").split(",") if o.strip()]
+if _console_origins:
+    from fastapi.middleware.cors import CORSMiddleware
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_console_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["*"],
+    )
+
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
 

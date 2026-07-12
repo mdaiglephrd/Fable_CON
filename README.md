@@ -3,7 +3,11 @@
 A research database for Georgia Department of Community Health (DCH) **Certificate of
 Need (CON)** records — applications, decisions, appeals, and court rulings for regulated
 healthcare projects in Georgia. Researchers use it to search records, relate documents
-within a matter, and analyze outcomes.
+within a matter, and analyze outcomes. The primary researcher UI is the
+**CON Research Console** — a React SPA in `web/` (Azure Static Web Apps Free, Entra
+sign-in) over the FastAPI research endpoints: case reader, citator, docket timelines,
+topics & key numbers, statutes, deadline calculator, stats, and the validation
+workflow (build guide: `docs/06-research-console-buildout.md`).
 
 ## Data model
 
@@ -29,18 +33,21 @@ vocab tables and `common/vocab.py`.
 
 | Path | What it is |
 |---|---|
-| `schema/` | Azure SQL DDL migrations + `migrate.py` runner (vocab seeds, core tables, indexes, full-text) |
-| `common/` | Shared code: docket normalization, vocabularies, DB connection helper |
-| `ingest/load_tags.py` | Idempotent, resumable loader for metadata-tag exports (CSV/JSON) → Matters + Documents |
+| `schema/` | Azure SQL DDL migrations + `migrate.py` runner (vocab seeds, core tables, indexes, full-text; research layer + seeds in `0006`–`0009`) |
+| `common/` | Shared code: docket normalization, vocabularies, DB connection helper, docket-family classifier, deadline rules, proceeding engine |
+| `ingest/load_tags.py` | Idempotent, resumable loader for metadata-tag exports (CSV/JSON) → Matters + Documents (incl. the research-layer columns) |
+| `ingest/load_document_text.py` | Loader for the document-text JSONL (Document Intelligence output) → `con.document_text` + `con.opinion_paragraph` |
 | `ingest/index_diff.py` | Diffs two repository index snapshots (gzipped JSONL); writes the change log; flags re-validation |
 | `ingest/weekly_report_parser.py` | Parses the weekly CON Tracking Report PDF into lifecycle events |
 | `functions/` | Azure Functions app: blob-triggered snapshot diff + report ingestion, daily catch-up sweep |
 | `api/` | FastAPI query/search API: filter on any field, full-text search, docket rollups, Azure AI Search semantic/vector search, `/ask` Q&A with citations |
-| `infra/` | Bicep for every Azure resource (SQL, Storage, Functions, App Service, AI Search, optional Azure OpenAI, Key Vault, monitoring) |
-| `m365/` | Microsoft 365 E7 integration artifacts: Power BI, Power Apps, Graph connector / Microsoft Search, Copilot Studio agent, Purview governance |
-| `docs/` | Implementation and operations guides, end-to-end walkthrough |
+| `api/routers/` | Research-layer endpoints for the console: cases (reader), citator, proceedings, topics, statutes, history, stats, deadlines, projects, alerts, wiki |
+| `web/` | The CON Research Console (React SPA, Static Web Apps Free); `web/design-reference/` holds the design handoff it is built from |
+| `infra/` | Bicep for every Azure resource (SQL, Storage, Functions, App Service, Static Web App, Document Intelligence, AI Search, optional Azure OpenAI, Key Vault, monitoring) |
+| `m365/` | Microsoft 365 E7 integration artifacts: Graph connector / Microsoft Search, Copilot Studio agent, Power BI, Purview governance (the Power App is retired — see `m365/powerapp/`) |
+| `docs/` | Implementation and operations guides 01–06, incl. the metadata-extraction spec (`05`) and the free-tier console buildout (`06`) |
 | `tests/` | Unit tests (no live Azure needed) + synthetic fixtures |
-| `DESIGN.md` | Internal contracts: schema, module interfaces, env var names |
+| `DESIGN.md` | Internal contracts: schema, module interfaces, env var names (research layer: "RESEARCH LAYER (v2)") |
 | `LESSONS.md` | Running log of lessons learned |
 
 ## Quickstart (local)
@@ -51,23 +58,30 @@ pip install -r requirements-dev.txt
 pytest -q                        # everything runs against fakes; no Azure needed
 
 cp .env.example .env             # fill in your values
-python -m schema.migrate         # apply DDL to your Azure SQL database
+python -m schema.migrate         # apply DDL (0001–0009: inventory + research layer)
 python -m ingest.load_tags export.csv --rejects rejects.csv
+python -m ingest.load_document_text extracted.jsonl --apply
 python -m ingest.index_diff old.jsonl.gz new.jsonl.gz --apply
 python -m ingest.weekly_report_parser report.pdf --apply
-uvicorn api.main:app --reload    # query/search API on :8000
+uvicorn api.main:app --reload    # query/search/research API on :8000
+
+cd web && npm ci && npm run dev  # research console (Vite dev server)
 ```
 
 ## Deploying
 
-1. **Azure**: `infra/README.md` — deploy the Bicep, run post-deploy steps (SQL users for
-   managed identities, Key Vault secrets, migrations, code deploy).
+1. **Azure**: `infra/README.md` — deploy the Bicep, run post-deploy steps 1–9 (SQL users
+   for managed identities, Key Vault secrets, migrations, code deploy, console deploy,
+   Document Intelligence, SQL free offer). The free-tier-first, end-to-end walkthrough
+   is `docs/06-research-console-buildout.md`.
 2. **Ingestion**: drop tag exports / index snapshots / weekly report PDFs into the
-   Storage containers; the Functions app ingests them (see `docs/03-ingestion-runbook.md`).
+   Storage containers; the Functions app ingests snapshots and reports automatically
+   (tag exports and document-text JSONL are loaded by CLI — see
+   `docs/03-ingestion-runbook.md`).
 3. **Microsoft 365**: `docs/04-m365-walkthrough.md` + `m365/*/README.md` —
-   Power BI report, Power App, Graph connector into Microsoft Search/Copilot, Copilot
-   Studio agent, Purview governance. Everything is tailored to what an E7 subscription
-   already includes.
+   Graph connector into Microsoft Search/Copilot, Copilot Studio agent, Power BI
+   report, Purview governance. Everything is tailored to what an E7 subscription
+   already includes; the Power App is retired in favor of the console.
 
 ## Design principles
 

@@ -66,6 +66,24 @@ no trigger watches it; tag exports are loaded manually with
 | `AZURE_OPENAI_EMBEDDING_DEPLOYMENT` | Embedding deployment name (1536-dim expected by the index). | `text-embedding-3-small` | yes (web app) |
 | `AZURE_OPENAI_API_VERSION` | AOAI API version. Note: read by `api/search_client.py` and documented in `api/README.md`, but absent from `.env.example` and DESIGN.md's env list — rarely needs changing. | `2024-06-01` | no |
 
+### Research console + Document Intelligence (research layer v2)
+
+| Variable | Meaning | Set by Bicep? |
+|---|---|---|
+| `DOCUMENT_INTELLIGENCE_ENDPOINT` | The Document Intelligence endpoint (`docIntelEndpoint` output), set as an **App Service (web app) setting**. Auth is the API's **managed identity** — the Bicep grants it Cognitive Services User on the account — so there is **no key**: a `DOCUMENT_INTELLIGENCE_KEY` would only ever be an out-of-band Key Vault reference, never in Bicep (`infra/README.md` step 8). The extraction run itself is **operator-driven** (docs/06 Phase 3); the repo's Python never calls Document Intelligence — `ingest/load_document_text.py` consumes the run's JSONL output. | yes (web app; empty when `deployDocIntel = false`) |
+| `CONSOLE_ORIGIN` | The research console's origin (`https://<staticWebAppHostname>`), delivered to the API for its **CORS allow-list** so the SPA can call it cross-origin. If you add a custom domain to the console, update this setting (and add the origin to any platform CORS config) — `infra/README.md` step 7. Honesty note (same spirit as `KEY_VAULT_URI` below): as of this writing no Python module reads it — `api/main.py` registers no CORS middleware yet; the value is wired so the console/API pairing is configuration-complete. | yes (web app; empty when `deployStaticWebApp = false`) |
+
+Two related non-settings:
+
+- **The console's own URL** is the `staticWebAppHostname` deployment output —
+  not an env var any Python module reads. The SPA's Entra auth and API base URL
+  are configured in `web/staticwebapp.config.json` + the SWA portal application
+  settings (`infra/README.md` step 7).
+- **`POST /deadlines/calculate` needs no configuration at all** — it is a pure
+  computation over `common/deadline_rules.py` (no DB, no Azure service). The
+  other research routers run on the same `SQL_*` settings as the v1 endpoints
+  and add no new variables.
+
 ### Key Vault
 
 | Variable | Meaning | Set by Bicep? |
@@ -93,8 +111,13 @@ no trigger watches it; tag exports are loaded manually with
 | `ingest/weekly_report_parser.py --apply` | ✔ | | | | | |
 | `functions/` | ✔ | ✔ | ✔ | | | |
 | `api/main.py` (DB endpoints) | ✔ | | | ✔ | | |
+| `api/routers/*` (research endpoints) | ✔ | | | | | |
 | `api/semantic.py` (`/search/semantic`, `/ask`) | | | | | ✔ | ✔ |
 | `api/search_sync.py` | ✔ | | | | ✔ | ✔ (vectors) |
+| `ingest/load_document_text.py --apply` | ✔ | | | | | |
+
+(`POST /deadlines/calculate` in `api/routers/deadlines.py` reads nothing —
+pure computation.)
 
 ---
 
@@ -185,8 +208,8 @@ Each decision, its options, and a recommendation for a solo E7 owner:
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
-| 1 | **`deploySearch`** — pay ~$75/mo for Azure AI Search? | `true`: `/search/semantic` + `/ask` work, `search_sync` has a target. `false`: those endpoints return 503; SQL full-text (`/search`) still works; end-user NL search goes through the E7 Graph connector instead (see [04-m365-walkthrough.md](04-m365-walkthrough.md)). | Start **`false`** unless you have a concrete programmatic/embedded retrieval need — the E7-first principle says researchers should use Microsoft Search/Copilot, which costs nothing extra. Flip to `true` later by editing the param and re-running the deployment (re-run `search_sync` after). |
-| 2 | **`deployOpenAI`** — deploy Azure OpenAI? | `true`: `/ask` answers and vectors get computed (per-token billing). `false` (default): `/ask` 503s; `/search/semantic` degrades gracefully to keyword+semantic. You may instead point `AZURE_OPENAI_ENDPOINT` at an existing account. | Keep **`false`** until `deploySearch = true` and you want `/ask`; then enable in a region with `gpt-4o-mini` + `text-embedding-3-small` quota. Pointless without Search. |
+| 1 | **`deploySearch`** — pay ~$75/mo for Azure AI Search? | `true`: `/search/semantic` + `/ask` work, `search_sync` has a target. `false`: those endpoints return 503; SQL full-text (`/search`) still works; end-user NL search goes through the E7 Graph connector instead (see [04-m365-walkthrough.md](04-m365-walkthrough.md)). | **`false`** — this is the free-tier posture (docs/06): SQL full-text covers keyword search for the console and API at $0, and the E7-first principle sends natural-language questions to Microsoft Search/Copilot, which cost nothing extra. Flip to `true` later only for a concrete programmatic/embedded retrieval need (re-run `search_sync` after). Note the Bicep default is still `true` — set it explicitly. |
+| 2 | **`deployOpenAI`** — deploy Azure OpenAI? | `true`: `/ask` answers and vectors get computed (per-token billing). `false` (default): `/ask` 503s; `/search/semantic` degrades gracefully to keyword+semantic. You may instead point `AZURE_OPENAI_ENDPOINT` at an existing account. | Stays **`false`** — the Copilot path (Graph connector + M365 Copilot, included in E7) is the ask-questions surface; `/ask` is the metered alternative for when answers must live inside the console. Enable only with `deploySearch = true`, in a region with `gpt-4o-mini` + `text-embedding-3-small` quota. Pointless without Search. |
 | 3 | **`FULLTEXT_ENABLED`** (+ the `fulltextEnabled` Bicep param) | `true`: `CONTAINSTABLE` ranked search — requires `0005_fulltext.sql` applied. `false`: LIKE fallback (slower, unranked, but works anywhere). | **`true`**. Azure SQL Database supports full-text; only set `false` if you deliberately ran `migrate --skip-fulltext`. Keep the app setting and the migration state in agreement. |
 | 4 | **`searchSemanticSearch`** — semantic ranker plan (only if `deploySearch=true`) | `free`: 1,000 semantic queries/month, then errors on semantic calls (the API auto-retries without semantic ranking — see `api/semantic.py`). `standard`: per-request billing, no cap. `disabled`. | **`free`**. A solo research workload rarely exceeds 1,000/month, and the API degrades gracefully. |
 | 5 | **SQL auth mode** | A: `ActiveDirectoryDefault` (per-principal DB users, no secrets). B: `SQL_CONNECTION_STRING`. | **A** everywhere. B only for non-Azure dev databases or driver overrides (§7). |
@@ -194,3 +217,5 @@ Each decision, its options, and a recommendation for a solo E7 owner:
 | 7 | **Functions storage auth** | Connection strings (`AzureWebJobsStorage`/`STORAGE_CONNECTION`, as deployed) vs `STORAGE_ACCOUNT_URL` + MSI. | Connection strings are fine to start; move to identity-based (`STORAGE_ACCOUNT_URL`, `allowSharedKeyAccess=false`) on the hardening pass (`infra/README.md`). |
 | 8 | **`enablePublicNetworkAccess`** | `true` (default; public endpoint + AllowAzureServices rule) vs `false` (requires private endpoints + VNet integration first). | **`true`** for the research build; note the AllowAzureServices caveat (admits any Azure tenant's traffic) and plan the hardening pass before sensitive use. |
 | 9 | **`sqlAdminPrincipalType`** | `User` (your account) vs `Group`. | **`User`** for a solo owner; `Group` the moment a second person might need admin. |
+| 10 | **`appServicePlanSku`** — API plan | `F1` (Free): $0, 60 CPU-min/day, no Always-On, cold starts after idle. `B1`: ~$13/mo, Always-On, no daily CPU quota. | **`F1` for the pilot**, `B1` once cold starts hurt or you hit the daily CPU quota (the upgrade table in docs/06). Note the Bicep default is `B1` — set `F1` explicitly for the free posture. |
+| 11 | **`docIntelSku`** — Document Intelligence tier | `F0` (free): capped at **500 pages/month** — fine for steady-state trickle extraction. `S0`: ~$1.50/1,000 pages, no cap. | **`F0`** steady-state. For the one-time corpus backfill (~24,290 documents far exceeds 500 pages/mo) either batch across months on F0 or temporarily redeploy with `S0`, run the extraction, then drop back to `F0` (`infra/README.md` step 8). |

@@ -46,8 +46,8 @@ param sqlDatabaseName string = 'condb'
 @description('Allow public network access to the SQL server (with the AllowAzureServices firewall rule). Set false once private endpoints are in place — see README "Hardening".')
 param enablePublicNetworkAccess bool = true
 
-@description('Deploy Azure AI Search (basic tier) for /search/semantic and /ask.')
-param deploySearch bool = true
+@description('Deploy Azure AI Search (basic tier, ~$75/mo) for /search/semantic and /ask. Default false: the free-tier posture relies on SQL full-text search (FULLTEXT_ENABLED).')
+param deploySearch bool = false
 
 @description('Semantic ranker plan for Azure AI Search. "free" caps at 1,000 requests/month; "standard" is billed per request.')
 @allowed(['disabled', 'free', 'standard'])

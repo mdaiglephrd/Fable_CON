@@ -76,8 +76,10 @@ Deeper references (this guide sequences them; they carry the exact commands):
    python -m ingest.load_tags export.csv --rejects rejects.csv
    ```
 8. **Extract document text.** Stage your PDFs/OCR output, run them through **Document Intelligence**
-   (endpoint is in the deployment outputs; the API's managed identity already has access), and emit
-   the JSONL format in **docs/05 §B**, then:
+   (endpoint is in the deployment outputs), and emit the JSONL format in **docs/05 §B**. Because you
+   run the extraction yourself, grant *your own* identity data-plane access first:
+   `az role assignment create --assignee <your-object-id> --role "Cognitive Services User" --scope <doc-intel-resource-id>`
+   (the API's managed identity already has this role). Then:
    ```bash
    python -m ingest.load_document_text extracted.jsonl --apply
    ```

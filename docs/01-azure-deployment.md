@@ -1,17 +1,28 @@
 # 01 — Azure deployment, end to end
 
 This guide takes you from an empty Azure subscription to a working CON research
-backend: SQL database with schema applied, blob-triggered ingestion Functions,
-the FastAPI query/search API behind Entra login, and (optionally) Azure AI
-Search + Azure OpenAI for `/search/semantic` and `/ask`.
+platform: SQL database with schema applied (inventory + research layer),
+blob-triggered ingestion Functions, the FastAPI query/search/research API behind
+Entra login, the **research console** (React SPA on Static Web Apps Free), a
+Document Intelligence account for document-text extraction, and (optionally)
+Azure AI Search + Azure OpenAI for `/search/semantic` and `/ask`.
+
+> **Free-tier defaults.** The research-layer parameters default to the free
+> posture: `sqlUseFreeOffer=true`, `docIntelSku='F0'`, `deployStaticWebApp=true`,
+> `deployOpenAI=false`. Add `deploySearch=false` (SQL full-text covers keyword
+> search) and, for a pilot, `appServicePlanSku='F1'`, and the whole deployment
+> runs at ~$0. The per-layer cost table is at the top of
+> [06-research-console-buildout.md](06-research-console-buildout.md) (details in
+> `infra/README.md` "Free-tier-first cost posture").
 
 Depth lives in the module READMEs — this guide is the ordering and the
 decision points:
 
-- [`infra/README.md`](../infra/README.md) — every resource, costs, hardening
+- [`infra/README.md`](../infra/README.md) — every resource, costs, post-deploy steps 1–9, hardening
 - [`schema/README.md`](../schema/README.md) — migration runner details
 - [`functions/README.md`](../functions/README.md) — trigger behavior, local runs, ODBC caveat
 - [`api/README.md`](../api/README.md) — endpoint reference
+- [`docs/06-research-console-buildout.md`](06-research-console-buildout.md) — the console walkthrough + cost table
 
 Everything below was verified against `infra/main.bicep`, `infra/main.bicepparam`,
 and the module code in this repo.
@@ -36,17 +47,18 @@ On your workstation:
 4. **Azure Functions Core Tools v4** (`func`) — used by `functions/deploy.sh`.
    (There is a zip-deploy fallback that needs only the Azure CLI; see step 8.)
 5. **`zip`** — used for the API zip deploy in step 9.
+6. **Node.js 20+** — only needed for the console build/deploy in step 12.
 
 On the subscription:
 
-6. Rights to **create resource groups** and, on the resource group, **create role
+7. Rights to **create resource groups** and, on the resource group, **create role
    assignments** — the deployment assigns data-plane RBAC roles to the app
    managed identities, which requires **Owner** or **User Access Administrator**
    on the resource group.
-7. To write Key Vault secrets in step 6 you also need the **Key Vault Secrets
+8. To write Key Vault secrets in step 6 you also need the **Key Vault Secrets
    Officer** role on the vault (RBAC authorization is on; subscription Owner
    alone does not grant data-plane writes).
-8. An **Entra ID user or group to act as SQL administrator**. The SQL server is
+9. An **Entra ID user or group to act as SQL administrator**. The SQL server is
    deployed **Entra-only** (`azureADOnlyAuthentication: true` in
    `infra/modules/sql.bicep`) — there is no SQL password, and classic
    `Uid=/Pwd=` SQL logins will not work against it. As a solo builder, using
@@ -85,7 +97,7 @@ reference (all defined in `infra/main.bicep`):
 | `sqlAdminTenantId` | no | deployment tenant | Only override for cross-tenant admins. `az account show --query tenantId -o tsv`. |
 | `sqlDatabaseName` | no | `condb` | Database name; env var `SQL_DATABASE` must match it later. |
 | `enablePublicNetworkAccess` | no | `true` | `true` = public endpoint + the `AllowAzureServices` (0.0.0.0) firewall rule. Set `false` only after building private endpoints (see `infra/README.md` "Hardening"). |
-| `deploySearch` | no | `true` | Azure AI Search basic (~$75/month — the biggest fixed cost). Needed for `/search/semantic` and `/ask`. Decision guidance in [02-configuration.md](02-configuration.md). |
+| `deploySearch` | no | `true` | Azure AI Search basic (~$75/month — the biggest fixed cost). Needed for `/search/semantic` and `/ask`. **For the free posture set `false`** — the API's SQL full-text `/search` covers keyword search at $0. Decision guidance in [02-configuration.md](02-configuration.md). |
 | `searchSemanticSearch` | no | `free` | `disabled` \| `free` (1,000 semantic requests/month cap) \| `standard` (billed per request). Recommendation: `free`. |
 | `deployOpenAI` | no | `false` | Deploys an Azure OpenAI account with `gpt-4o-mini` + `text-embedding-3-small`. Off by default because regional model availability and quota vary. You can instead point `AZURE_OPENAI_ENDPOINT` at an existing account. |
 | `openAiChatCapacity` | no | `8` | Thousands of tokens-per-minute for the chat deployment (only used when `deployOpenAI = true`). |
@@ -96,6 +108,12 @@ reference (all defined in `infra/main.bicep`):
 | `fulltextEnabled` | no | `true` | Sets the API's `FULLTEXT_ENABLED` app setting. Keep `true` — Azure SQL Database supports full-text and migration `0005_fulltext.sql` creates the indexes (step 7). |
 | `logRetentionDays` | no | `30` | Log Analytics retention, 30–730. |
 | `useUniqueStorageSuffix` | no | `true` | Appends `uniqueString(resourceGroup().id)` to the storage account name for global uniqueness. Leave `true`. |
+| `deployStaticWebApp` | no | `true` | Static Web App (**Free** plan, $0) hosting the React research console (`web/`). The Free plan includes Entra ID auth. |
+| `staticWebAppLocation` | no | `location` | Static Web Apps are offered in a limited region set (e.g. `westus2`, `centralus`, `eastus2`, `westeurope`, `eastasia`) — override if your resource-group region is unsupported. |
+| `deployDocIntel` | no | `true` | Azure AI Document Intelligence account for the document-text extraction step (guide 06, Phase 3; loader in `ingest/load_document_text.py`). |
+| `docIntelSku` | no | `F0` | `F0` = free, **500 pages/month cap**; `S0` = pay-as-you-go (~$1.50/1,000 pages) for the one-time corpus backfill. Decision guidance in [02-configuration.md](02-configuration.md). |
+| `sqlUseFreeOffer` | no | `true` | Azure SQL Database **free offer** on `condb`: 100,000 vCore-seconds + 32 GB data + 32 GB backup free per month. Confirm/monitor per `infra/README.md` step 9. |
+| `appServicePlanSku` | no | `B1` | `F1` (Free — fine for a pilot: cold starts, 60 CPU-min/day, no Always-On) or `B1` (~$13/mo) for the API plan. Decision guidance in [02-configuration.md](02-configuration.md). |
 
 Only `sqlAdminObjectId` and `sqlAdminLogin` have no usable default.
 
@@ -115,17 +133,24 @@ az deployment group show -g gacon-dev-rg -n main --query properties.outputs
 ```
 
 Outputs (names from `infra/main.bicep`): `sqlServerFqdn` (→ `SQL_SERVER`),
-`functionAppName`, `webAppName`, `searchEndpoint` (→ `SEARCH_ENDPOINT`; empty
-when `deploySearch = false`), `storageAccountName`, `keyVaultUri`
-(→ `KEY_VAULT_URI`), `appInsightsConnectionString`.
+`functionAppName`, `webAppName`, `staticWebAppHostname` (the console's default
+hostname; empty when `deployStaticWebApp = false`), `docIntelEndpoint`
+(→ `DOCUMENT_INTELLIGENCE_ENDPOINT`; empty when `deployDocIntel = false`),
+`searchEndpoint` (→ `SEARCH_ENDPOINT`; empty when `deploySearch = false`),
+`storageAccountName`, `keyVaultUri` (→ `KEY_VAULT_URI`),
+`appInsightsConnectionString`.
 
 What now exists (dev defaults): `gacon-dev-log` + `gacon-dev-appi`
 (monitoring), `gacondevst<unique>` storage with containers `index-snapshots`,
-`weekly-reports`, `tag-exports`, `gacon-dev-kv`, `gacon-dev-sql` + `condb`
-(GP_S_Gen5_1 serverless, auto-pause 60 min), `gacon-dev-func` (Linux
-Consumption, Python 3.11), `gacon-dev-api` (Linux B1, Python 3.11), and — if
-enabled — `gacon-dev-search` / `gacon-dev-aoai`. RBAC roles for the two
-managed identities are assigned automatically (see `infra/README.md`).
+`weekly-reports`, `tag-exports`, `document-text`, `gacon-dev-kv`,
+`gacon-dev-sql` + `condb` (GP_S_Gen5_1 serverless, auto-pause 60 min, free
+offer when `sqlUseFreeOffer = true`), `gacon-dev-func` (Linux Consumption,
+Python 3.11), `gacon-dev-api` (Linux F1 or B1 per `appServicePlanSku`,
+Python 3.11), `gacon-dev-web` (Static Web App, Free plan — provisioned empty;
+content deploys in step 12), `gacon-dev-di` (Document Intelligence, `docIntelSku`),
+and — if enabled — `gacon-dev-search` / `gacon-dev-aoai`. RBAC roles for the
+managed identities (including the API MSI's **Cognitive Services User** on the
+Document Intelligence account) are assigned automatically (see `infra/README.md`).
 
 ---
 
@@ -193,13 +218,19 @@ the repo root, with your venv active and `az login` done —
 export SQL_SERVER=gacon-dev-sql.database.windows.net   # the sqlServerFqdn output
 export SQL_DATABASE=condb
 
-python -m schema.migrate --dry-run    # should list 0001..0005
+python -m schema.migrate --dry-run    # should list 0001..0009
 python -m schema.migrate
 ```
 
 Applies, in order: `0001_schema_and_vocab.sql`, `0002_core_tables.sql`,
-`0003_operational_tables.sql`, `0004_indexes.sql`, `0005_fulltext.sql`, each
-recorded in `con.schema_migrations`.
+`0003_operational_tables.sql`, `0004_indexes.sql`, `0005_fulltext.sql` (the v1
+inventory), then the **research layer + seeds**: `0006_research_tables.sql`
+(new columns on `con.matter`/`con.document` + all new content/taxonomy/
+workspace tables), `0007_research_vocab.sql` (seeds the five new vocab tables),
+`0008_topic_taxonomy.sql` (the CON key-number tree), `0009_deadline_rules.sql`
+(seeds `con.deadline_rule`, kept in sync with `common/deadline_rules.py`).
+Each is recorded in `con.schema_migrations`; details in
+[`schema/README.md`](../schema/README.md) "Research layer (v2)".
 
 **The `--skip-fulltext` decision.** Azure SQL Database supports full-text
 search, so for this deployment run **without** the flag. `--skip-fulltext`
@@ -303,7 +334,7 @@ changes materially (it uses `merge_or_upload`, so re-runs are safe).
 ## 11. Post-deploy step 7: Easy Auth (Entra) on the API
 
 The API has **no auth in code** — do not skip this on any internet-facing
-deployment. Run the smoke tests in step 12 first (Easy Auth breaks anonymous
+deployment. Run the smoke tests in step 13 first (Easy Auth breaks anonymous
 `curl`), then:
 
 ```bash
@@ -324,7 +355,27 @@ secrets/certificates and restricting to specific users.
 
 ---
 
-## 12. Smoke tests
+## 12. Post-deploy step 8: deploy the research console (Static Web App)
+
+Skip if `deployStaticWebApp = false`. The `gacon-dev-web` Static Web App (Free
+plan) is provisioned **empty** — Bicep does not link a repo or push content.
+Build `web/` (`npm ci && npm run build`) and deploy the output with the SWA
+CLI, then wire **Entra ID sign-in** via `web/staticwebapp.config.json` and
+point the SPA at the API:
+
+- Exact commands (SWA CLI deploy, deployment token, auth config, API base URL
+  + CORS via the `CONSOLE_ORIGIN` app setting): **`infra/README.md` step 7**.
+- The console-centric walkthrough (what to smoke-test in the UI, and the
+  Document Intelligence extraction that feeds it):
+  **[06-research-console-buildout.md](06-research-console-buildout.md)**,
+  Phases 3–4.
+
+If you later put the console on a custom domain, update `CONSOLE_ORIGIN` on
+the API (see [02-configuration.md](02-configuration.md)).
+
+---
+
+## 13. Smoke tests
 
 Run these **before** enabling Easy Auth (or afterwards with a browser session
 instead of `curl`).
@@ -335,6 +386,12 @@ instead of `curl`).
    # → {"status":"ok"}
    curl https://gacon-dev-api.azurewebsites.net/vocab/county
    # → {"name":"county","items":[...159 counties...],"count":159}
+
+   # research layer, still no DB — /deadlines/calculate is a pure computation:
+   curl -X POST https://gacon-dev-api.azurewebsites.net/deadlines/calculate \
+     -H 'content-type: application/json' \
+     -d '{"family":"CON","triggerEvent":"Challenge filed","date":"2026-07-01"}'
+   # → one deadline: HO appointment due 2026-07-31 (+30 days)
    ```
 2. **API can reach SQL** (proves the MSI user from step 5 works):
    ```bash

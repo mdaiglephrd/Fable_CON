@@ -19,7 +19,7 @@ param sqlAdminPrincipalType = 'Group' // 'User' | 'Group' | 'Application'
 
 // --- Options ------------------------------------------------------------------
 param enablePublicNetworkAccess = true // false once private endpoints are set up
-param deploySearch = true // AI Search basic (~$75/mo) — the biggest fixed cost
+param deploySearch = false // AI Search basic (~$75/mo); false = free posture (SQL full-text covers keyword search)
 param searchSemanticSearch = 'free' // 'disabled' | 'free' | 'standard'
 param deployOpenAI = false // enable in a region with gpt-4o-mini + text-embedding-3-small quota
 // param openAiChatCapacity = 8
@@ -35,3 +35,4 @@ param deployStaticWebApp = true // Azure Static Web App (Free) for the React con
 param deployDocIntel = true // Azure AI Document Intelligence for the document-text step
 param docIntelSku = 'F0' // 'F0' free (500 pages/mo) | 'S0' standard (for the initial corpus backfill)
 param sqlUseFreeOffer = true // Azure SQL Database free offer (GP serverless free monthly limits)
+// param appServicePlanSku = 'F1' // F1 = free pilot (60 CPU-min/day, no Always-On); default B1 (~$13/mo)

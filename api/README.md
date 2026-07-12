@@ -1,7 +1,13 @@
 # api/ — FastAPI service for the GA DCH CON database
 
-HTTP layer over the `con` schema in Azure SQL, plus Azure AI Search / Azure
-OpenAI retrieval endpoints. Contracts live in the repo-root `DESIGN.md`.
+HTTP layer over the `con` schema in Azure SQL: the v1 inventory endpoints, the
+research-layer endpoints in `api/routers/*` (case reader, citator, proceedings,
+topics, statutes, history, stats, deadlines, projects, alerts, wiki), plus
+Azure AI Search / Azure OpenAI retrieval endpoints. Contracts live in the
+repo-root `DESIGN.md` (research layer: its "RESEARCH LAYER (v2)" section).
+
+The **primary consumer is the research console** (`web/` — the React SPA on
+Static Web Apps; see `docs/06-research-console-buildout.md`).
 
 ## Run locally
 
@@ -36,6 +42,42 @@ Interactive docs: <http://127.0.0.1:8000/docs>.
 List responses are paginated: `{"items": [...], "total": <COUNT(*) with same filters>, "limit": n, "offset": n}`.
 Endpoints needing Azure Search / Azure OpenAI return **503** naming the missing
 setting when unconfigured.
+
+### Research layer (v2) — console endpoints (`api/routers/*`)
+
+| Method | Path | Description | Example |
+|---|---|---|---|
+| GET | `/cases/{entry_id}` | Case-reader payload: `con.opinion` + ordered paragraphs + headnotes + reporter citations + counsel + briefs + document/matter meta + citator flag counts; 404 when no opinion row exists | `curl localhost:8000/cases/9000030` |
+| GET | `/dockets/{docket_id}/proceeding` | Docket-engine proceeding view (stored `con.proceeding_stage` rows when present, else synthesized from the matter via `common/proceeding.py`) + the `docket_event` timeline; accepts any docket variant | `curl localhost:8000/dockets/CON-1234567/proceeding` |
+| GET | `/citator/{entry_id}` | How-cited report: `flags` (Citing/Positive/Cautionary/Negative counts), `citingCases`, `tableOfAuthorities` | `curl localhost:8000/citator/9000030` |
+| GET | `/topics` | Full CON key-number topic tree | `curl localhost:8000/topics` |
+| GET | `/topics/{topic_id}` | One topic: children, documents classified under it, headnote count | `curl localhost:8000/topics/vi-24` |
+| GET | `/statutes` | Statute/rule index; optional `kind=OCGA\|RULE` | `curl 'localhost:8000/statutes?kind=OCGA'` |
+| GET | `/statutes/{statute_id}` | Full text + subsections + cross-references + `citingCases` | `curl localhost:8000/statutes/31-6-43` |
+| GET | `/history/{docket_id}` | `docket_event` timeline, newest first; optional `type=` one of `Filing\|Order\|Opinion\|Hearing\|Brief\|Notice`; accepts any docket variant | `curl 'localhost:8000/history/CON-1234567?type=Order'` |
+| GET | `/stats` | Outcome aggregates over `con.matter`: grant/denial/reversal KPIs, `byService`/`byYear`/`byFamily`, appeal rates; `range=all\|3yr\|1yr` | `curl 'localhost:8000/stats?range=3yr'` |
+| POST | `/deadlines/calculate` | Regulatory deadlines from a trigger event — **pure computation, no DB** (`common/deadline_rules.py`) | `curl -X POST localhost:8000/deadlines/calculate -H 'content-type: application/json' -d '{"family":"CON","triggerEvent":"Challenge filed","date":"2026-07-01"}'` |
+| GET/POST | `/projects` | Research projects: list (`owner=`, `status=`) / create `{name, description?, tags?, owner?}` | `curl -X POST localhost:8000/projects -H 'content-type: application/json' -d '{"name":"NICU need methodology"}'` |
+| GET | `/projects/{project_id}` | One project + its saved/flagged items | `curl localhost:8000/projects/nicu-need-methodology-3f9c1a` |
+| POST | `/projects/{project_id}/items` | Add an item; requires `entryId` and/or `docketId` (dockets canonicalized) | `curl -X POST localhost:8000/projects/<id>/items -H 'content-type: application/json' -d '{"entryId":9000030,"flagged":true}'` |
+| POST | `/projects/{project_id}/complete` | Mark a project complete | `curl -X POST localhost:8000/projects/<id>/complete` |
+| GET/POST | `/alerts` | Saved alerts: list (active only; `?all=true`, `?owner=`) / create `{name, query, scope, frequency, owner?}` | `curl -X POST localhost:8000/alerts -H 'content-type: application/json' -d '{"name":"Fulton NICU","query":{"q":"NICU"},"scope":"matters","frequency":"weekly"}'` |
+| DELETE | `/alerts/{alert_id}` | Soft-deactivate (sets `active=0`; never hard-deletes) | `curl -X DELETE localhost:8000/alerts/fulton-nicu-8b2d4e` |
+| GET | `/wiki` | Wiki articles grouped by `group_name` | `curl localhost:8000/wiki` |
+| GET | `/wiki/{article_id}` | One article: TOC + body + revision history | `curl localhost:8000/wiki/<article-id>` |
+| POST | `/wiki/{article_id}/revisions` | Submit a **pending** revision `{author, diff}` | `curl -X POST localhost:8000/wiki/<id>/revisions -H 'content-type: application/json' -d '{"author":"you@tenant.com","diff":{"body":"..."}}'` |
+| POST | `/wiki/{article_id}/revisions/{revision_id}/review` | Review a pending revision: `{action: "approve"\|"reject"}` | `curl -X POST localhost:8000/wiki/<id>/revisions/7/review -H 'content-type: application/json' -d '{"action":"approve"}'` |
+
+**camelCase convention**: research-endpoint JSON uses **camelCase keys**
+(`docketId`, `citingCases`, `dueDate`, …) — the SPA contract from the design
+handoff (`tests/fixtures/handoff/con-corpus.js`) — and omits `None`-valued
+fields; DB columns stay snake_case and the routers map at the boundary. The v1
+endpoints above keep their snake_case column names. `POST /deadlines/calculate`
+accepts `triggerEvent` (alias) or `trigger_event`.
+
+The console (`web/`) is the primary consumer of these endpoints. `/ask` stays
+available but **optional** — the E7 Copilot path is preferred for end-user
+natural-language questions (see the note at the bottom).
 
 ## Index sync CLI
 
