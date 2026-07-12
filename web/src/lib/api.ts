@@ -479,14 +479,23 @@ export async function getWikiArticle(articleId: string): Promise<WikiArticleDeta
       pending: memWikiPending?.articleId === articleId ? memWikiPending : null,
     };
   }
+  // api/routers/wiki.py's get_article() shape: {id, group, title, toc, body,
+  // status, updatedAt, revisions: [{revisionId, author, submittedAt, status, diff}]}
   const raw = await req<Record<string, unknown>>(`/wiki/${encodeURIComponent(articleId)}`);
+  const rawRevisions = Array.isArray(raw.revisions) ? (raw.revisions as Record<string, unknown>[]) : [];
   return {
-    articleId: String(raw.articleId ?? articleId),
-    group: (raw.groupName as string | undefined) ?? undefined,
+    articleId: String(raw.id ?? articleId),
+    group: raw.group as string | undefined,
     title: raw.title as string | undefined,
     updated: raw.updatedAt as string | undefined,
     body: Array.isArray(raw.body) ? (raw.body as WikiBodyBlock[]) : undefined,
-    revisions: Array.isArray(raw.revisions) ? (raw.revisions as WikiRevision[]) : undefined,
+    revisions: rawRevisions.map((r) => ({
+      revisionId: r.revisionId as number | string | undefined,
+      author: r.author as string | undefined,
+      date: r.submittedAt as string | undefined,
+      text: typeof r.diff === 'string' ? r.diff : JSON.stringify(r.diff ?? ''),
+      status: r.status as string | undefined,
+    })),
     pending: null,
   };
 }
