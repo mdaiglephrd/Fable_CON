@@ -572,7 +572,10 @@ con.processed_blob's "only Succeeded blocks reprocessing" rule.
 
 ## common/ — new modules
 - `common/axis_taxonomy.py`, `common/axis_validation.py` — as above.
-- `common/file_identity.py` — `hash_file(path) -> str`, `hash_path(path: str) -> str` (both sha256).
+- `common/file_identity.py` — `hash_file(path) -> str`, `hash_path(path: str) -> str` (both sha256);
+  `sniff_type(path) -> 'pdf'|'image'|'html'|'text'|'unknown'` (magic bytes first, extension fallback,
+  printable-text heuristic last — the real corpus is mostly extension-less, so routing by extension
+  alone is wrong). KIND_* constants exported for callers.
 - `common/json_logging.py` — `configure_json_logging(name) -> Logger`, structured JSON log records.
   Used only by `ingest/tag_*` modules -- a deliberate, scoped divergence from the rest of the repo's
   plain stdlib `logging` convention, per this pipeline's own quality bar.
@@ -584,7 +587,10 @@ con.processed_blob's "only Succeeded blocks reprocessing" rule.
 
 ## ingest/ — new modules (flat, `tag_`-prefixed, matching the existing one-file-per-concern convention)
 - `ingest/tag_enumerate.py` — `enumerate_candidate_files(root) -> Iterator[CandidateFile]`. Pure
-  filesystem walk; no DB, no OCR.
+  filesystem walk; no DB, no OCR. CandidateFile carries size_bytes + st_mtime/st_ctime; the
+  timestamps are deliberately NOT loaded into con.document (repo_date_* mean Laserfiche repository
+  dates, and filesystem times on a copied SSD are copy artifacts) — kept on the dataclass for
+  logging/future use only.
 - `ingest/tag_crosswalk.py` — `load_index(xlsx_path) -> CrosswalkIndex` (operator-supplied
   Path/Name/Type/Entry ID/Page Count index); `resolve_entry_id(file_path, index, docket=None,
   actual_page_count=None) -> MatchResult` (fuzzy match via difflib + docket-scoped narrowing +
@@ -592,19 +598,33 @@ con.processed_blob's "only Succeeded blocks reprocessing" rule.
   `AMBIGUITY_MARGIN`); `infer_doc_type_phase(path_parts) -> (doc_type, phase)` (folder-position table
   grounded in real observed folder names, e.g. "A Main Application" -> Application/Request).
 - `ingest/tag_ocr.py` — `OcrEngine` protocol, `OcrResult`; `NativeTextEngine` (pdfplumber text-layer
-  fast path); `OpenOcrEngine` (wraps `openocr-python`, lazy-imported).
+  fast path; `extract_if_native(path) -> OcrResult | None` is the one-parse check+extract used by
+  tag_process); `OpenOcrEngine(mode='mobile', backend='onnx')` wraps `openocr-python` against its
+  VERIFIED API — the engine call takes a file-path string and returns a `(results, time_dicts)`
+  tuple; results per image, each a list of `{'text','score'}` line dicts. Scanned-PDF pages are
+  rasterized to temp image files (the engine takes paths). `MAX_OCR_PAGES` (2000) caps the OCR path
+  (`PageCapExceeded`); `extract_plain_text`/`extract_html_text` handle text/HTML files with no OCR.
 - `ingest/tag_process.py` — `process_one_file(candidate, engine, index) -> ProcessedDocument`. Pure
   given an engine + index; never raises (OCR failure and crosswalk-unresolved are both captured in the
-  returned object, not exceptions).
+  returned object, not exceptions). Routing is by `common.file_identity.sniff_type`, NOT extension:
+  pdf -> native-text fast path else OCR; image -> OCR; text/html -> direct read; unknown -> Failed.
 - `ingest/tag_load.py` — `load_one_record(conn, doc) -> LoadResult`. Calls `ingest.load_tags.
   shape_row`/`_write_shaped` and `ingest.load_document_text.shape_record`/`_write_shaped` directly
   (the private `_write_shaped` helpers, not the public `load_rows`/`load_texts`, because those commit
-  on their own batch-size -- this module's caller owns commit cadence). Also owns the
-  `con.tag_source_file` ledger (`already_succeeded`/`record_processed`).
+  on their own batch-size -- this module's caller owns commit cadence). Confidence scales: the 0-1
+  OCR score is written x100 to `con.document.ocr_confidence` (that column's 0-100 convention) and raw
+  to `con.document_text.di_confidence` (0-1 convention). Also owns the `con.tag_source_file` ledger
+  (`already_succeeded`/`record_processed`/`succeeded_source_keys` — the last preloads all Succeeded
+  keys in one query for the orchestrator's resume skip-check), and logs a JSON warning when a second
+  distinct file resolves onto an entry_id already loaded from another file.
 - `ingest/tag_orchestrate.py` — CLI `python -m ingest.tag_orchestrate root --index-xlsx PATH [--apply]
-  [--batch-size 500] [--rejects out.csv]`. Thin wrapper composing the three stages above; batching is
-  implicit via `os.walk`'s natural directory-tree traversal order (no separate re-grouping pass, so the
-  whole corpus never needs buffering before work starts).
+  [--batch-size 500] [--workers 1] [--rejects out.csv]`. Thin wrapper composing the three stages
+  above; batching is implicit via `os.walk`'s natural directory-tree traversal order (no separate
+  re-grouping pass, so the whole corpus never needs buffering before work starts). Dry run (no
+  --apply) is enumeration-only: file count + total bytes from stat, no hashing/OCR/DB. `--workers N`
+  fans hash+crosswalk+OCR over a spawn-context Pool (per-worker initializer loads its own index from
+  the xlsx path and builds its own OpenOcrEngine); the parent stays the single DB writer with
+  unchanged commit/ledger semantics. Rejects CSV columns: file_path, docket_id, detail, confidence.
 - `ingest/load_axis_tags.py` — Phase 2's consumer loader. CLI `python -m ingest.load_axis_tags path
   [--json] [--apply] [--batch-size 500] [--rejects out.csv]`. One row per `entry_id` + axis1/axis2/
   axis3/axis4; `shape_tag_row` validates via `common.axis_validation.validate_tags` before any write;

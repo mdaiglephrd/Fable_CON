@@ -60,22 +60,57 @@ migration in this repo).
 
 ## 3. Running the pipeline
 
+**Prerequisite — OCR model download.** The first `OpenOCR()` construction
+downloads model weights (huggingface/modelscope), so the machine needs
+network access and disk space at first-run time. If the run machine is
+offline/air-gapped, construct the engine once while online
+(`python -c "from openocr import OpenOCR; OpenOCR(mode='mobile', backend='onnx')"`)
+so the weights are cached locally before the real run.
+
 ```bash
-# Dry run (default): enumerates the corpus and hashes every file (a real
-# read of each file, so this also surfaces unreadable files), but runs no
-# OCR and touches no database.
+# Dry run (default): a fast scope preview -- enumerates the corpus and sums
+# file count + size from directory metadata only. No file contents are read
+# (no hashing), no OCR runs, nothing touches the database.
 python -m ingest.tag_orchestrate /path/to/ssd --index-xlsx index_documents_only_2.xlsx
 
 # Real run: OCR + load, committing every 500 documents, with a rejects report.
 python -m ingest.tag_orchestrate /path/to/ssd --index-xlsx index_documents_only_2.xlsx \
     --apply --batch-size 500 --rejects rejects.csv
+
+# Parallel OCR: 6 worker processes; database writes stay in the parent.
+python -m ingest.tag_orchestrate /path/to/ssd --index-xlsx index_documents_only_2.xlsx \
+    --apply --workers 6 --rejects rejects.csv
 ```
 
 Full signature:
-`python -m ingest.tag_orchestrate root --index-xlsx PATH [--apply] [--batch-size 500] [--rejects out.csv]`
+`python -m ingest.tag_orchestrate root --index-xlsx PATH [--apply] [--batch-size 500] [--workers 1] [--rejects out.csv]`
 
-Prints: files seen / skipped (already done) / loaded / unresolved (crosswalk)
-/ failed (OCR or DB) / commits.
+Prints: files seen / total size / skipped (already done) / loaded /
+unresolved (crosswalk) / failed (OCR or DB) / commits.
+
+### 3.1 Sizing the run (do this before committing to the full corpus)
+
+The corpus is ~3.4M pages (137K documents × ~23 pages average per the index).
+Single-threaded OCR of the scanned portion runs for **weeks**, so measure
+first:
+
+1. Run `--apply` against one small real subtree (~100 files) and time it.
+2. Split the measured time into the native-text share (fast; most born-digital
+   PDFs) and the OCR share (slow; scans/images) using the `text_source`
+   distribution: `SELECT text_source, COUNT(*) FROM con.document_text GROUP BY text_source;`
+3. Extrapolate to the full corpus and pick `--workers` from the per-file OCR
+   cost and the machine's core count. Each worker holds its own ONNX model in
+   memory — budget roughly one model per worker and leave cores for the
+   parent's hashing + DB writing.
+4. Run per-category subtrees (`1 Certificate of Need`, `2 Determinations`,
+   `3 Letters of Non-Reviewability`, `8 State Architect Files`, …) as separate
+   sessions — resumability makes stopping/starting between them free.
+
+With `--workers N`, hashing + crosswalk + OCR fan out across `N` spawned
+processes (each loads its own copy of the index and its own OCR engine); the
+parent process remains the **single database writer**, so commit/ledger
+semantics are identical to a serial run. Completion order within the pool is
+not deterministic, but every file is processed exactly once.
 
 **Keep the index `.xlsx` outside the SSD root.** `enumerate_candidate_files`
 walks `root` recursively and treats every regular file it finds as a
@@ -101,12 +136,32 @@ a `Succeeded` row skips reprocessing (mirroring `con.processed_blob`'s
 `Failed`/`Unresolved` stay retryable, so fixing the underlying cause (or
 improving the crosswalk match) and rerunning heals them without a manual
 ledger edit. Re-running the whole command after any crash is always safe.
+The succeeded keys are preloaded in one query at run start, so resuming a
+150K-file run costs one SELECT, not 150K.
+
+**Run from a consistent mount point.** `path_hash` is computed over the
+literal path string, so the same SSD mounted at a different drive letter /
+mount path (or walked from a different OS with different separators) re-keys
+the entire ledger — the run would reprocess everything (it converges via
+MERGE, but wastes the full OCR cost). Pick one machine + mount point for the
+whole corpus run and stick to it.
+
+**File-type routing is content-sniffed, not extension-based**
+(`common/file_identity.py::sniff_type` — magic bytes first): most of the real
+corpus is extension-less, so extensions can't be trusted. PDFs (by `%PDF-`
+header) get the native-text check first — a PDF whose own text layer already
+looks real skips OCR entirely, a real cost/time win over 150,000 documents;
+scanned PDFs and images go to OpenOCR; plain-text and HTML files are read
+directly (no OCR); anything unrecognizable fails fast with
+`unsupported file type` in the ledger instead of wasting an OCR attempt.
+Scanned PDFs above the OCR page cap (`ingest/tag_ocr.py::MAX_OCR_PAGES`,
+2,000 pages — the index's largest document is 9,794 pages) also fail fast
+with `page cap exceeded` and land in the rejects report for manual handling,
+so one pathological file cannot stall a multi-week run.
 
 **OCR engine**: `openocr-python`, run in-process (`ingest/tag_ocr.py`
-`OpenOcrEngine`) — no cloud OCR key/endpoint, unlike the existing Document
-Intelligence path. `NativeTextEngine` (pdfplumber) is tried first for every
-PDF; a PDF whose own text layer already looks real skips OpenOCR entirely — a
-real cost/time win over 150,000 documents.
+`OpenOcrEngine`, default `mode="mobile", backend="onnx"`) — no cloud OCR
+key/endpoint, unlike the existing Document Intelligence path.
 
 ## 4. What gets written
 
@@ -120,16 +175,18 @@ For each **resolved** file (crosswalk found a confident Entry ID match):
 - `con.document` — `entry_id`, `docket_id`, `file_name`, `doc_type`/`phase`
   (inferred from the matched index row's folder position — see
   `ingest/tag_crosswalk.py`'s `infer_doc_type_phase`), `page_count`,
-  `source_path` (the real on-disk path), `ocr_status`, `ocr_confidence`,
-  `text_source`. `validation_status` defaults to `Unvalidated`, same as every
-  other intake path.
+  `source_path` (the real on-disk path), `ocr_status`, `ocr_confidence`
+  (**0–100 scale**, this table's convention), `text_source`.
+  `validation_status` defaults to `Unvalidated`, same as every other intake
+  path.
 - `con.document_text` — `full_text`, `char_count`, `text_source`
-  (`ocr`/`native`), `di_model` (`openocr-python==<version>` or
-  `pdfplumber-native`), `di_confidence`.
+  (`ocr`/`native`), `di_model` (`openocr-python` or `pdfplumber-native`),
+  `di_confidence` (**0–1 scale**, this table's convention — the same OCR
+  score lands on both scales deliberately).
 - `con.tag_source_file` — the ledger row (`Succeeded`).
 
 For an **unresolved** file: only `con.tag_source_file` (`Unresolved`) is
-written, plus a line in `--rejects` (`file_path,docket_id,detail_or_confidence`).
+written, plus a line in `--rejects` (`file_path,docket_id,detail,confidence`).
 
 Nothing writes to `con.document_axis1`–`con.document_axis4` — those stay
 empty until Phase 2.
@@ -181,7 +238,10 @@ SELECT COUNT(*) FROM con.document_text;
 | Most files come back `Unresolved` | The real on-disk folder tree doesn't contain a recognizable docket id (`common/docket.py`'s `extract_dockets`), or the SSD subtree isn't in the index at all | Check a sample path by hand; if a docket id is present but oddly formatted, extend `common/docket.py`'s patterns (as done for `LNR-ASC`/`LNR-EQT` — see `LESSONS.md`); if genuinely outside the index, that subtree needs its own index export. |
 | Many `Unresolved` results within one docket that clearly *is* in the index | Ambiguous near-tie between two candidates (e.g. "Appendix A" vs "Appendix B" with similar OCR'd names) | Lower `AMBIGUITY_MARGIN` or raise `_PAGE_COUNT_BONUS` in `ingest/tag_crosswalk.py` only after confirming with a few real examples that the page-count cross-check reliably disambiguates them; re-run (unresolved files stay retryable). |
 | `entry_id not in con.document` errors from `load_document_text`-shaped writes | Should not happen through this pipeline (the document row is always written in the same `load_one_record` call before its text) — if seen, it means `ingest.tag_load.load_one_record` was called directly on a doc without going through `ingest.tag_process.process_one_file` first | File a repo issue; don't hand-construct `ProcessedDocument` outside the normal pipeline. |
-| OCR is very slow / GPU not used | `openocr-python`'s ONNX/Torch backend selection is an installation-time choice, not a runtime flag here | Confirm which backend was installed (`pip show openocr-python`) and reinstall with the intended backend per the package's own docs. |
+| OCR is very slow overall | Single-threaded run on a mostly-scanned corpus | Use `--workers N` (§3.1) after a timed sample; also confirm the `text_source` split — a corpus that's mostly `native` shouldn't be slow at all. |
+| OCR is very slow per page / GPU not used | Backend choice: `OpenOcrEngine` defaults to `mode="mobile", backend="onnx"` (CPU) | The Torch backend and server-grade model are constructor args (`OpenOcrEngine(mode="server", backend="torch")`) — wire a different default in `ingest/tag_orchestrate.py::main` if the hardware supports it, and install the matching extra per the package's own docs. |
+| A specific huge PDF keeps failing with `page cap exceeded` | It exceeds `MAX_OCR_PAGES` (2,000) and is a scan with no native text layer | Handle it manually: split it, or OCR it out-of-band and load the text via `ingest/load_document_text.py`. Raising the cap in `ingest/tag_ocr.py` is possible but reintroduces the stall risk for everything else. |
+| Many `Failed` rows with `unsupported file type (sniffed: unknown)` | Files that are neither PDF, image, HTML, nor plain text (e.g. `.doc` binaries) | Expected for genuinely binary formats: convert them out-of-band (e.g. Word → PDF) and re-run — `Failed` ledger rows stay retryable. |
 | A file's OCR text looks wrong/garbled but `ocr_status = 'Succeeded'` | OCR "succeeding" only means the engine ran without raising — it says nothing about accuracy | Use `validation_status` (already `Unvalidated` by default) and the existing research-console validation workflow to flag/correct it, same as any other intake path. |
 | Rerunning after a crash seems to redo work that already finished | Confirm the batch that was in flight when the crash happened was never committed (`con.tag_source_file` won't show `Succeeded` for it) — this is expected, not a bug | Nothing to fix; that batch's files get reprocessed and converge via MERGE + the ledger. Only genuinely `Succeeded` files are skipped. |
 | `ModuleNotFoundError: openocr` / `openpyxl` | Dependencies not installed in this environment | `pip install -r requirements.txt` (or `requirements-dev.txt` for local dev). |

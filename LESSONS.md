@@ -82,6 +82,15 @@ in place rather than adding duplicates.
   a real data sample can surface a bug in code you didn't intend to touch — fix it at the source
   rather than adding a second workaround next to the first one.
 
+- **Fuzzy filename matching inside one docket must ignore the docket id itself.** Every file and
+  index row in a docket's subtree shares the docket id in its name, so raw difflib similarity scores
+  are inflated by the shared prefix: in the smoke fixture, "DET2005018 Notes" (not in the index at
+  all) confidently matched "DET2005018 Determin Request" and would have loaded OCR text onto the
+  wrong Laserfiche entry. `ingest/tag_crosswalk.py` now strips the docket variants from both sides
+  before scoring (falling back to unstripped strings when nothing remains). Lesson: when candidates
+  are pre-grouped by a shared key, score only the distinctive remainder — and end-to-end smoke runs
+  against realistic fixtures catch what per-function unit tests are structurally blind to.
+
 - **A Laserfiche folder literally named "1 Master File" is not the same thing as the Axis 2
   "Masterfile" tag value.** ~36% of the real SSD corpus lives under that folder, which is Laserfiche's
   own per-docket case-file *container* — most documents under it are ordinary Applications,
