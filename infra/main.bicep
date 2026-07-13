@@ -100,6 +100,10 @@ param docIntelSku string = 'F0'
 @description('Enable the Azure SQL Database free offer (GP serverless: 100k vCore-seconds + 32 GB data + 32 GB backup free per month, per database). See README "Enable the SQL free offer".')
 param sqlUseFreeOffer bool = true
 
+@description('Behavior when the monthly SQL free limit is exhausted (applied only when sqlUseFreeOffer = true). AutoPause: pause until next month (stays $0). BillOverUsage: keep online, bill overage at standard GP serverless rates.')
+@allowed(['AutoPause', 'BillOverUsage'])
+param freeLimitExhaustionBehavior string = 'AutoPause'
+
 @description('App Service plan SKU for the API. F1 (Free) suits pilot use — 60 CPU-min/day, no Always-On, cold starts; B1 (~$13/mo) for steady state.')
 @allowed(['F1', 'B1'])
 param appServicePlanSku string = 'B1'
@@ -169,6 +173,7 @@ module sql 'modules/sql.bicep' = {
     adminPrincipalType: sqlAdminPrincipalType
     enablePublicNetworkAccess: enablePublicNetworkAccess
     sqlUseFreeOffer: sqlUseFreeOffer
+    freeLimitExhaustionBehavior: freeLimitExhaustionBehavior
   }
 }
 

@@ -8,6 +8,7 @@
  * comp georgia-con-research.dc.html.
  */
 import corpusJson from './corpus.json';
+import recentDocketsJson from './recentDockets.json';
 import {
   build,
   RIVERSTONE_CON,
@@ -17,6 +18,7 @@ import {
 import type {
   CaseReader,
   CitatorReport,
+  DocketEvent,
   ResultCard,
   Seg,
 } from './types';
@@ -69,41 +71,12 @@ export const DOCKET_TYPES: Record<string, DocketTypeMeta> = {
   'LNR-EQT': { label: 'LNR·EQT', full: 'Letter of Nonreviewability — Equip.', fill: '#8B5CF6' },
 };
 
-/** Sample of recent dockets drawn from the published DCH project lists. */
-export const RECENT_DOCKETS: DocketRecord[] = [
-  { type: 'DET-EQT', num: 'DET-EQT2026062', facility: "Emory Saint Joseph's Hospital", title: 'Replacement of da Vinci Robot', received: '4/22/2026', date: null, finding: 'Pending', county: 'Fulton', contact: 'J. Goodman' },
-  { type: 'DET-EQT', num: 'DET-EQT2026061', facility: 'Piedmont Mountainside Hospital', title: 'Replace / Repair Single-Plane Vascular X-Ray System', received: '4/14/2026', date: null, finding: 'Pending', county: 'Pickens', contact: 'C. MacEwen' },
-  { type: 'DET-EQT', num: 'DET-EQT2026060', facility: 'Piedmont Henry Hospital', title: 'Acquisition of Mobile MRI', received: '4/14/2026', date: null, finding: 'Pending', county: 'Henry', contact: 'C. MacEwen' },
-  { type: 'DET-EQT', num: 'DET-EQT2026059', facility: 'Emory Hospital Warner Robins (Houston Hosps.)', title: 'EHWR MRI and CT Acquisition', received: '4/13/2026', date: null, finding: 'Pending', county: 'Houston', contact: 'M. Phagan' },
-  { type: 'DET-EQT', num: 'DET-EQT2026058', facility: 'Union General Hospital', title: 'Acquisition of Fixed PET/CT', received: '3/16/2026', date: null, finding: 'Pending', county: 'Union', contact: 'M. Madison' },
-  { type: 'DET-EQT', num: 'DET-EQT2026057', facility: "Emory Saint Joseph's Hospital", title: 'ESJH MRI at Vinings', received: '3/16/2026', date: null, finding: 'Pending', county: 'Cobb', contact: 'J. Goodman' },
-  { type: 'DET-EQT', num: 'DET-EQT2026055', facility: 'Piedmont Hospital, Inc.', title: 'Linear Accelerator', received: '3/13/2026', date: null, finding: 'Pending', county: 'Fulton', contact: 'C. Macewen' },
-  { type: 'DET-EQT', num: 'DET-EQT2026053', facility: 'Piedmont Columbus Regional Midtown', title: 'Acquisition of Cardiac Catheterization Equipment', received: '3/13/2026', date: null, finding: 'Pending', county: 'Muscogee', contact: 'C. MacEwen' },
-  { type: 'DET-EQT', num: 'DET-EQT2026051', facility: 'AIENT Management Company LLC', title: 'CT Scanner Request', received: '3/4/2026', date: null, finding: 'Withdrawn', county: 'Fulton', contact: 'R. Sinha' },
-  { type: 'DET-EQT', num: 'DET-EQT2026050', facility: 'Tift Regional Health System, Inc.', title: 'Acquisition of Philips Azurion 7M20', received: '2/27/2026', date: null, finding: 'Pending', county: 'Tift', contact: 'T. Branch' },
-  { type: 'DET-EQT', num: 'DET-EQT2026049', facility: 'Atrium Health Navicent', title: 'Acquisition of a Nuclear Medicine Camera', received: '2/26/2026', date: null, finding: 'Pending', county: 'Bibb', contact: 'B. Dennie' },
-  { type: 'DET-EQT', num: 'DET-EQT2026047', facility: "St. Mary's Good Samaritan Hospital", title: 'Good Samaritan Mobile PET/CT', received: '2/25/2026', date: null, finding: 'Pending', county: 'Greene', contact: 'J. Herring' },
-  { type: 'DET-EQT', num: 'DET-EQT2026046', facility: "St. Mary's Sacred Heart Hospital", title: 'Sacred Heart Mobile PET/CT', received: '2/25/2026', date: null, finding: 'Pending', county: 'Franklin', contact: 'J. Herring' },
-  { type: 'DET', num: 'DET2026006', facility: 'Piedmont Healthcare / Encompass Health', title: 'Joint Venture — Acute Rehab Hospital', received: '3/28/2026', date: null, finding: 'Pending', county: 'Forsyth', contact: 'C. MacEwen' },
-  { type: 'DET', num: 'DET2026005', facility: 'Emory University Hospital', title: 'Bed Reconfiguration — Neuro ICU', received: '3/14/2026', date: null, finding: 'Pending', county: 'DeKalb', contact: 'J. Goodman' },
-  { type: 'DET', num: 'DET2026004', facility: 'Wellstar Douglas Hospital', title: 'Replacement of Cath Lab Suite', received: '2/28/2026', date: '4/4/2026', finding: 'Approved', county: 'Douglas', contact: 'K. Andrews' },
-  { type: 'DET', num: 'DET2026003', facility: 'Northside Hospital, Inc.', title: 'Conversion of Skilled Nursing Beds', received: '2/14/2026', date: '4/11/2026', finding: 'Approved', county: 'Fulton', contact: 'M. Madison' },
-  { type: 'DET', num: 'DET2026001', facility: 'East Georgia Regional Medical Center', title: 'Renovation / Replacement of Inpatient Tower', received: '1/22/2026', date: '3/28/2026', finding: 'Approved', county: 'Bulloch', contact: 'T. Branch' },
-  { type: 'CON', num: '2026007', facility: 'Riverstone Imaging, LLC', title: 'Fixed 1.5T MRI — Bartow County (on remand)', received: '4/8/2026', date: null, finding: 'Pending', county: 'Bartow', contact: 'A. Halverson' },
-  { type: 'CON', num: '2026004', facility: 'Magnolia Behavioral Health, LLC', title: 'Psychiatric Beds — 48, Fulton/DeKalb PSA', received: '2/4/2026', date: '4/14/2026', finding: 'Denied', county: 'DeKalb', contact: 'C. MacEwen' },
-  { type: 'CON', num: '2026002', facility: 'Three Rivers Imaging, LLC', title: 'Fixed MRI — Bartow County', received: '1/8/2026', date: '4/2/2026', finding: 'Approved', county: 'Bartow', contact: 'S. Maddox' },
-  { type: 'CON', num: '2025028', facility: 'Northridge Cardiac Servs., LLC', title: 'Cardiac Catheterization Lab — Forsyth Co.', received: '6/12/2025', date: '11/1/2025', finding: 'Denied', county: 'Forsyth', contact: 'J. Goodman' },
-  { type: 'CON', num: '2025017', facility: 'Cobblestone Surgical Partners, LLC', title: 'Multispecialty ASC — Chatham County', received: '4/4/2025', date: '11/19/2025', finding: 'Approved', county: 'Chatham', contact: 'M. Madison' },
-  { type: 'DET-ASC', num: 'DET-ASC2025007', facility: 'Hughston Surgical Center of Valdosta, LLC', title: 'Physician-Owned Multispecialty ASC', received: '8/14/2025', date: '11/10/2025', finding: 'Approved', county: 'Lowndes', contact: 'C. MacEwen' },
-  { type: 'DET-ASC', num: 'DET-ASC2025004', facility: 'Alliance Surgery Center at Peachtree City', title: 'Joint Venture, Single Specialty ASC', received: '5/2/2025', date: '8/14/2025', finding: 'Approved', county: 'Fayette', contact: 'J. Atkins' },
-  { type: 'DET-ASC', num: 'DET-ASC2024012', facility: 'Southeast Eye Laser Surgery Center LLC', title: 'Physician-Owned, Single Specialty ASC', received: '11/18/2024', date: '2/4/2025', finding: 'Approved', county: 'Gwinnett', contact: 'M. Phagan' },
-  { type: 'LNR-ASC', num: 'LNR-ASC2026003', facility: 'Atlanta South Gastroenterology, PC', title: 'Single Specialty ASC — Endoscopy', received: '2/19/2026', date: '4/7/2026', finding: 'Issued', county: 'Clayton', contact: 'R. Sinha' },
-  { type: 'LNR-ASC', num: 'LNR-ASC2025014', facility: 'Center for Spine & Pain Medicine, PC', title: 'Single Specialty ASC — Pain Management', received: '10/3/2025', date: '12/18/2025', finding: 'Issued', county: 'Cobb', contact: 'B. Dennie' },
-  { type: 'LNR-ASC', num: 'LNR-ASC2025009', facility: 'Gainesville Eye Associates, LLC', title: 'Single Specialty ASC — Ophthalmology', received: '7/15/2025', date: '9/22/2025', finding: 'Issued', county: 'Hall', contact: 'T. Branch' },
-  { type: 'LNR-EQT', num: 'LNR-EQT2026008', facility: 'The Longstreet Clinic, PC', title: 'Acquisition of CT Scanner', received: '2/27/2026', date: '4/10/2026', finding: 'Issued', county: 'Hall', contact: 'M. Madison' },
-  { type: 'LNR-EQT', num: 'LNR-EQT2025021', facility: 'The Emory Clinic', title: 'Replacement Linear Accelerator', received: '11/4/2025', date: '12/30/2025', finding: 'Issued', county: 'DeKalb', contact: 'K. Andrews' },
-  { type: 'LNR-EQT', num: 'LNR-EQT2025014', facility: 'Harbin Clinic, LLC', title: 'Replacement of 1.5T MRI', received: '7/18/2025', date: '9/10/2025', finding: 'Issued', county: 'Floyd', contact: 'J. Herring' },
-];
+/**
+ * Sample of recent dockets drawn from the published DCH project lists —
+ * the full roll from the comp's RECENT_DOCKETS array, kept as data in
+ * recentDockets.json (single source for Applications/Home/Proceedings).
+ */
+export const RECENT_DOCKETS: DocketRecord[] = recentDocketsJson as DocketRecord[];
 
 export function findingColor(f: string | null | undefined): string {
   return f === 'Approved' || f === 'Issued'
@@ -177,6 +150,223 @@ export function caseIdForDocket(docketId: string): string | null {
   const hit = Object.entries(CASE_TO_NUM).find(([, num]) => num === docketId);
   return hit ? hit[0] : CASES[docketId] ? docketId : null;
 }
+
+// ---------------------------------------------------------------------------
+// Docket filing history (GET /history/{docketId} fixture)
+// ---------------------------------------------------------------------------
+
+/** Map a chrono tag ('Order · OSAH', 'Filing · Applicant', …) to an event type. */
+function chronoTagToType(tag: string): string {
+  const t = tag.toLowerCase();
+  if (t.startsWith('order')) return 'Order';
+  if (t.startsWith('opinion')) return 'Opinion';
+  if (t.startsWith('filing')) return 'Filing';
+  if (t.startsWith('brief')) return 'Brief';
+  if (t.startsWith('hearing')) return 'Hearing';
+  return 'Notice';
+}
+
+/**
+ * Fixture events for the History timeline: corpus cases contribute their
+ * chrono rows ([day, month, year, tag, color, title, party]); docket-roll
+ * records without a corpus case synthesize filing/decision events.
+ */
+export function fixtureGetHistory(docketId: string): DocketEvent[] | null {
+  const caseId = caseIdForDocket(docketId);
+  const rec = CASES[caseId ?? ''];
+  if (rec?.chrono?.length) {
+    return rec.chrono.map((e, i) => {
+      const [day, month, year, tag, , title, party] = e;
+      const court = tag.includes('·') ? tag.split('·')[1].trim() : '';
+      return {
+        eventId: i + 1,
+        date: `${month} ${day}, ${year}`,
+        type: chronoTagToType(tag),
+        court: court || undefined,
+        description: title,
+        actor: party || undefined,
+      };
+    });
+  }
+  const roll = RECENT_DOCKETS.find((d) => d.num === docketId);
+  if (!roll) return null;
+  const events: DocketEvent[] = [];
+  if (roll.date) {
+    events.push({
+      eventId: 2,
+      date: String(roll.date),
+      type: 'Order',
+      court: 'DCH Planning',
+      description: `Letter of determination issued — ${roll.finding}`,
+      actor: roll.contact ?? undefined,
+    });
+  }
+  events.push({
+    eventId: 1,
+    date: String(roll.received ?? ''),
+    type: 'Filing',
+    court: 'DCH Planning',
+    description: `${roll.title} — request filed`,
+    actor: roll.facility ?? undefined,
+  });
+  return events;
+}
+
+// ---------------------------------------------------------------------------
+// My Proceedings — the user's tracked matters (subset of the docket roll)
+// ---------------------------------------------------------------------------
+
+export interface TrackedMatter {
+  caseId: string;
+  docketId: string;
+  badge: string;
+  num: string;
+  name: string;
+  title: string;
+  stage: string;
+  stageColor: string;
+  next: string;
+}
+
+export const TRACKED_MATTERS: TrackedMatter[] = [
+  {
+    caseId: 'riverstone-imaging',
+    docketId: '2026007',
+    badge: 'CON',
+    num: 'CON 2026007',
+    name: 'Riverstone Imaging, LLC',
+    title: 'Fixed 1.5T MRI — Bartow County (on remand)',
+    stage: 'OSAH hearing set',
+    stageColor: '#F59E0B',
+    next: 'Prehearing statement due Jul 9, 2026',
+  },
+  {
+    caseId: 'magnolia',
+    docketId: '2026004',
+    badge: 'CON',
+    num: 'CON 2026004',
+    name: 'Magnolia Behavioral Health, LLC',
+    title: '48 Psychiatric Beds — Fulton/DeKalb PSA',
+    stage: 'Denied — appeal pending',
+    stageColor: 'var(--accent-text)',
+    next: 'Commissioner review requested',
+  },
+  {
+    caseId: 'three-rivers',
+    docketId: '2026002',
+    badge: 'CON',
+    num: 'CON 2026002',
+    name: 'Three Rivers Imaging, LLC',
+    title: 'Fixed MRI — Bartow County',
+    stage: 'Approved',
+    stageColor: '#10B981',
+    next: '30-day intervention window closed',
+  },
+  {
+    caseId: 'northridge',
+    docketId: '2025028',
+    badge: 'CON',
+    num: 'CON 2025028',
+    name: 'Northridge Cardiac Servs., LLC',
+    title: 'Cardiac Cath Lab — Forsyth County',
+    stage: 'Denied — on appeal (Ct. App.)',
+    stageColor: 'var(--accent-text)',
+    next: 'Appellee brief due Jul 21, 2026',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Proceedings activity log (comp's MATTER_HIST_RAW) — orders, filings,
+// alerts, and deadlines across the tracked matters, grouped by day.
+// ---------------------------------------------------------------------------
+
+export interface MatterHistItem {
+  kind: 'order' | 'filing' | 'alert' | 'status' | 'deadline';
+  tag: string;
+  tagColor: string;
+  matter: string;
+  text: string;
+  time: string;
+  /** route to open on click. */
+  to: string;
+}
+
+export interface MatterHistGroup {
+  day: string;
+  items: MatterHistItem[];
+}
+
+export const MATTER_HISTORY_GROUPS: MatterHistGroup[] = [
+  {
+    day: 'Today — June 25, 2026',
+    items: [
+      {
+        kind: 'order',
+        tag: 'Order',
+        tagColor: 'var(--accent-text)',
+        matter: 'Riverstone Imaging, LLC',
+        text: 'OSAH scheduling order entered — evidentiary hearing set for Aug 5, 2026',
+        time: '9:12 AM',
+        to: '/docket/2026007',
+      },
+      {
+        kind: 'alert',
+        tag: 'Alert',
+        tagColor: '#F59E0B',
+        matter: 'Northridge Cardiac Servs., LLC',
+        text: 'Trace™ flagged a new citing decision with distinguishing treatment',
+        time: '8:40 AM',
+        to: '/citator/northridge',
+      },
+    ],
+  },
+  {
+    day: 'Yesterday — June 24, 2026',
+    items: [
+      {
+        kind: 'filing',
+        tag: 'Filing',
+        tagColor: '#3B82F6',
+        matter: 'Magnolia Behavioral Health, LLC',
+        text: 'Request for Commissioner review docketed',
+        time: '3:26 PM',
+        to: '/document/magnolia',
+      },
+      {
+        kind: 'status',
+        tag: 'Status',
+        tagColor: '#10B981',
+        matter: 'Three Rivers Imaging, LLC',
+        text: 'Certificate of Need issued — matter closed',
+        time: '11:02 AM',
+        to: '/document/three-rivers',
+      },
+    ],
+  },
+  {
+    day: 'June 20, 2026',
+    items: [
+      {
+        kind: 'deadline',
+        tag: 'Deadline',
+        tagColor: 'var(--accent-text)',
+        matter: 'Northridge Cardiac Servs., LLC',
+        text: 'Appellee brief deadline calendared — Jul 21, 2026',
+        time: '4:48 PM',
+        to: '/calculator',
+      },
+      {
+        kind: 'filing',
+        tag: 'Filing',
+        tagColor: '#3B82F6',
+        matter: 'Riverstone Imaging, LLC',
+        text: 'Applicant prehearing statement filed',
+        time: '1:15 PM',
+        to: '/docket/2026007',
+      },
+    ],
+  },
+];
 
 // ---------------------------------------------------------------------------
 // Search scopes + facets (from the comp)

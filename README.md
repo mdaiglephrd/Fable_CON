@@ -39,13 +39,15 @@ vocab tables and `common/vocab.py`.
 | `ingest/load_document_text.py` | Loader for the document-text JSONL (Document Intelligence output) → `con.document_text` + `con.opinion_paragraph` |
 | `ingest/index_diff.py` | Diffs two repository index snapshots (gzipped JSONL); writes the change log; flags re-validation |
 | `ingest/weekly_report_parser.py` | Parses the weekly CON Tracking Report PDF into lifecycle events |
+| `ingest/tag_*.py` | Bulk SSD-corpus ETL (Phase 1): enumerate → OCR/native-text extract → crosswalk to Laserfiche Entry ID → idempotent load into `con.matter`/`con.document`/`con.document_text` (`docs/07`) |
+| `ingest/load_axis_tags.py` | Loader for Harvey's Georgia CON Tagging Taxonomy (Axis 1–4) exports → `con.document_axis1`–`4` (Phase 2, `docs/08`) |
 | `functions/` | Azure Functions app: blob-triggered snapshot diff + report ingestion, daily catch-up sweep |
 | `api/` | FastAPI query/search API: filter on any field, full-text search, docket rollups, Azure AI Search semantic/vector search, `/ask` Q&A with citations |
 | `api/routers/` | Research-layer endpoints for the console: cases (reader), citator, proceedings, topics, statutes, history, stats, deadlines, projects, alerts, wiki |
 | `web/` | The CON Research Console (React SPA, Static Web Apps Free); `web/design-reference/` holds the design handoff it is built from |
 | `infra/` | Bicep for every Azure resource (SQL, Storage, Functions, App Service, Static Web App, Document Intelligence, AI Search, optional Azure OpenAI, Key Vault, monitoring) |
 | `m365/` | Microsoft 365 E7 integration artifacts: Graph connector / Microsoft Search, Copilot Studio agent, Power BI, Purview governance (the Power App is retired — see `m365/powerapp/`) |
-| `docs/` | Implementation and operations guides 01–06, incl. the metadata-extraction spec (`05`) and the free-tier console buildout (`06`) |
+| `docs/` | Implementation and operations guides 01–06, incl. the metadata-extraction spec (`05`) and the free-tier console buildout (`06`); the tag ETL runbook (`07`) and Harvey tagging guide (`08`) |
 | `tests/` | Unit tests (no live Azure needed) + synthetic fixtures |
 | `DESIGN.md` | Internal contracts: schema, module interfaces, env var names (research layer: "RESEARCH LAYER (v2)") |
 | `LESSONS.md` | Running log of lessons learned |

@@ -1,6 +1,6 @@
 # docs/ — implementation and operations guides
 
-Connective tissue for the repo: these six guides give you the **order of
+Connective tissue for the repo: these guides give you the **order of
 operations** across the modules and link into each module's README for depth.
 
 Recommended reading order — **to build the platform**:
@@ -9,7 +9,11 @@ Recommended reading order — **to build the platform**:
 [05](05-metadata-extraction-spec.md) → [04](04-m365-walkthrough.md).
 Guide 06 is the free-tier-first, account-to-running walkthrough that sequences
 the rest; 03 and 05 are read side by side (05 says *what* to capture, 03 says
-*how* to load it).
+*how* to load it). [07](07-tag-etl-runbook.md)/[08](08-harvey-tagging-guide.md)
+are a separate, later track: bulk-loading the SSD document corpus and tagging
+it against the Georgia CON Tagging Taxonomy (Axis 1–4) — read them together
+the same way (07 says *how* documents get loaded, 08 says *how* they get
+tagged once loaded).
 
 | Guide | One line |
 |---|---|
@@ -19,6 +23,8 @@ the rest; 03 and 05 are read side by side (05 says *what* to capture, 03 says
 | [04-m365-walkthrough.md](04-m365-walkthrough.md) | The Microsoft 365 E7 narrative: how the Azure side (and the research console) connect to the tenant, the build order across `m365/*` (Graph connector → Copilot Studio → Power BI → Purview; the Power App is retired), what E7 covers vs what's metered, tenant admin prerequisites, and the full-system acceptance checklist. |
 | [05-metadata-extraction-spec.md](05-metadata-extraction-spec.md) | The extraction spec, by document type: what to capture from every CON record, which tag-export column / JSONL field / editorial screen it enters through, which table/column stores it, and which console view consumes it. Your ingestion contract. |
 | [06-research-console-buildout.md](06-research-console-buildout.md) | Building the whole platform from a brand-new Azure account, free-tier-first: cost table up front, phase-by-phase (account → Bicep → data load → API + console → M365), and the "when you outgrow the free tiers" upgrade table. |
+| [07-tag-etl-runbook.md](07-tag-etl-runbook.md) | Bulk-loading the ~150K-document SSD corpus: confirms it's the same Laserfiche repository v1/v2 already model, the fuzzy path→Entry ID crosswalk (the index's paths don't exactly match the real disk layout), running `ingest.tag_orchestrate`, the `con.tag_source_file` idempotency ledger, monitoring/troubleshooting, and the later Azure Function conversion plan. |
+| [08-harvey-tagging-guide.md](08-harvey-tagging-guide.md) | Phase 2, for a human operator: structuring one Harvey Vault per document type, configuring Review Table columns for Axis 1–4 (incl. the Masterfile authority-type value and its DB-enforced constraint), the "`1 Master File` folder ≠ Masterfile tag" pitfall, exporting and loading results via `ingest/load_axis_tags.py`, and verification queries. |
 
 ## Start here if you only want…
 
@@ -38,6 +44,9 @@ the rest; 03 and 05 are read side by side (05 says *what* to capture, 03 says
 - **…dashboards, Microsoft Search, or Copilot over the data**:
   [04-m365-walkthrough.md](04-m365-walkthrough.md), then the specific
   `m365/*/README.md`.
+- **…to bulk-load the SSD document corpus, or tag it against the Georgia CON
+  Tagging Taxonomy**: [07-tag-etl-runbook.md](07-tag-etl-runbook.md) (loading)
+  then [08-harvey-tagging-guide.md](08-harvey-tagging-guide.md) (tagging).
 - **…to run everything locally first**: the Quickstart in the
   [repo-root README](../README.md), plus `functions/README.md` for the local
   Functions host.

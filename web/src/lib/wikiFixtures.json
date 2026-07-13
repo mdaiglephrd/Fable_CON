@@ -1,0 +1,273 @@
+{
+  "groups": ["Foundations", "Process & Procedure", "Substantive Review", "Adjudication & Appeals", "Recent Developments"],
+  "articles": [
+    {
+      "articleId": "overview",
+      "group": "Foundations",
+      "title": "Overview of Georgia's Certificate of Need Program",
+      "readTime": "7 min",
+      "updated": "Jun 12, 2026",
+      "lead": "How Georgia regulates the establishment and expansion of health services — the statutory purpose, the agency structure, and where the CON program sits within Title 31.",
+      "body": [
+        { "p": ["Georgia's Certificate of Need (CON) program requires that certain new institutional health services, facilities, and major medical equipment secure state approval before they may be established or acquired. The program is administered by the Department of Community Health (DCH) under ", ["stat", "O.C.G.A. § 31-6-1", "31-6-1"], " et seq. and the implementing regulations at ", ["stat", "Ga. Comp. R. & Regs. Chapter 111-2-2", "rule-111-2-2-.09"], "."] },
+        { "h": "Legislative purpose" },
+        { "p": ["The General Assembly's stated findings, codified at ", ["stat", "§ 31-6-1", "31-6-1"], ", tie CON review to containing health-care costs, avoiding unnecessary duplication of services, and promoting access — particularly for the medically underserved. Those findings frame how hearing officers and reviewing courts read the substantive criteria that follow."] },
+        { "h": "The reviewing agency" },
+        { "p": ["DCH's Planning Section receives applications and determination requests, publishes project lists and batching schedules, and issues the initial letter of determination granting or denying a CON under ", ["stat", "§ 31-6-43", "31-6-43"], ". Contested matters proceed to a hearing officer of the Office of State Administrative Hearings (OSAH), then to the DCH Commissioner (or CON Appeal Panel), and finally to the superior court on the administrative record."] },
+        { "note": ["Practice tip — Nearly every merits fight turns on \"need.\" Before drafting, pull the service-specific need methodology in ", ["stat", "Rule 111-2-2", "rule-111-2-2-.40"], " that governs the proposed service; it controls the numeric showing far more than the general considerations of ", ["stat", "§ 31-6-42", "31-6-42"], "."] },
+        { "h": "What this wiki covers" },
+        { "p": ["These articles orient new practitioners to the process, the substantive criteria, the appellate ladder, and recent statutory change. Each links out to the controlling statutes, the relevant key numbers, and leading decisions in the Trace™ citator."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-1 — Legislative findings", "target": "31-6-1" },
+        { "kind": "statute", "label": "§ 31-6-40 — Activities requiring CON", "target": "31-6-40" },
+        { "kind": "topic", "label": "CON I — Jurisdiction & Reviewability", "target": "i" }
+      ],
+      "revisions": [
+        { "date": "Jun 12, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "reviewable",
+      "group": "Foundations",
+      "title": "What Requires a CON: Reviewable Activities & Thresholds",
+      "readTime": "6 min",
+      "updated": "May 30, 2026",
+      "lead": "The categories of \"new institutional health service\" that trigger review, the capital-expenditure and equipment thresholds, and the activities the statute exempts.",
+      "body": [
+        { "p": ["Section ", ["stat", "31-6-40", "31-6-40"], " defines the universe of activities that require a CON — new or converted facilities, changes in bed capacity, the offering of a new institutional health service, and the acquisition of major medical equipment above statutory dollar thresholds."] },
+        { "h": "Common triggers" },
+        { "list": [
+          ["Establishing or relocating a health-care facility"],
+          ["Capital expenditures above the indexed threshold of ", ["stat", "§ 31-6-45", "31-6-45"]],
+          ["New clinical services (e.g., cardiac catheterization, radiation therapy)"],
+          ["Acquisition of major medical equipment above the equipment threshold"],
+          ["Increases in the number of beds in a category"]
+        ] },
+        { "h": "Determinations of reviewability" },
+        { "p": ["Where an applicant is unsure whether an activity is reviewable, ", ["stat", "§ 31-6-43(e)", "31-6-43"], " allows a request for a letter of determination — the DET and LNR docket families. A letter of nonreviewability (LNR) confirms the activity may proceed without a full CON; it is itself final agency action subject to judicial review."] },
+        { "note": ["Thresholds are indexed and change periodically. Always confirm the current dollar figures on the DCH Planning Section page before advising a client that a project falls below review."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-40 — New institutional health services", "target": "31-6-40" },
+        { "kind": "statute", "label": "§ 31-6-45 — Capital expenditure threshold", "target": "31-6-45" }
+      ],
+      "revisions": [
+        { "date": "May 30, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "cycle",
+      "group": "Process & Procedure",
+      "title": "The Review Cycle: Letter of Intent to Final Order",
+      "readTime": "9 min",
+      "updated": "Jun 18, 2026",
+      "lead": "A stage-by-stage walk through a contested CON — from the letter of intent through the Commissioner's final order — with the deadlines that govern each step.",
+      "body": [
+        { "p": ["A CON proceeding moves through a defined sequence. Missing a jurisdictional deadline at any stage can end the matter regardless of the merits, so calendar every date from the letter of intent forward."] },
+        { "h": "1 — Letter of intent & application" },
+        { "p": ["The applicant files a letter of intent, then a complete application on the applicable batching cycle. DCH reviews for completeness and may issue requests for additional information that toll the review clock."] },
+        { "h": "2 — Initial decision" },
+        { "p": ["Under ", ["stat", "§ 31-6-43(a)", "31-6-43"], ", DCH must grant or deny by the close of business on a date certain following receipt of a complete application. The result issues as a letter of determination."] },
+        { "h": "3 — Administrative appeal" },
+        { "p": ["A denied applicant, or an aggrieved party who timely intervened, may request review within 30 days (", ["stat", "§ 31-6-44", "31-6-44"], "). The matter is assigned to an OSAH hearing officer who conducts a de novo evidentiary hearing."] },
+        { "h": "4 — Commissioner / Appeal Panel review" },
+        { "p": ["Within 30 days of the hearing officer's initial decision, any party may seek review by the Commissioner, whose decision constitutes the final decision of the Department."] },
+        { "h": "5 — Judicial review" },
+        { "p": ["A party aggrieved by the final agency decision may petition the superior court under ", ["stat", "§ 31-6-44.1", "31-6-44.1"], "; further appeal lies to the Court of Appeals and the Supreme Court of Georgia. See ", ["case", "Riverstone Imaging, LLC v. DCH", "riverstone-imaging"], " for the standard applied on review."] },
+        { "note": ["The 30-day windows in §§ 31-6-44 and 31-6-44.1 are strictly construed. Use the Deadline Calculator to project each downstream date the moment a letter of determination issues."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-43 — Grant or deny CON", "target": "31-6-43" },
+        { "kind": "statute", "label": "§ 31-6-44 — Administrative appeals", "target": "31-6-44" },
+        { "kind": "tool", "label": "Deadline Calculator", "target": "/calculator" }
+      ],
+      "revisions": [
+        { "date": "Jun 18, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "det-lnr",
+      "group": "Process & Procedure",
+      "title": "Determinations of Reviewability & Letters of Nonreviewability",
+      "readTime": "5 min",
+      "updated": "Apr 22, 2026",
+      "lead": "The DET and LNR docket families — when to request a determination, what the finding means, and how it can be challenged.",
+      "body": [
+        { "p": ["Not every project needs a full CON. Section ", ["stat", "31-6-43(e)", "31-6-43"], " lets a party ask DCH whether a proposed activity is reviewable at all. DCH answers within 45 days of a complete request by issuing either a determination of reviewability (DET) or a letter of nonreviewability (LNR)."] },
+        { "h": "The six docket families" },
+        { "list": [
+          ["CON — full Certificate of Need application"],
+          ["DET — determination of reviewability (general)"],
+          ["DET-ASC — determination, ambulatory surgery center"],
+          ["DET-EQT — determination, major medical equipment"],
+          ["LNR-ASC — letter of nonreviewability, ASC"],
+          ["LNR-EQT — letter of nonreviewability, equipment"]
+        ] },
+        { "h": "Finality & challenge" },
+        { "p": ["A letter of determination under § 31-6-43(e) is final agency action. A competitor who believes DCH wrongly issued an LNR — allowing a project to proceed without review — may seek judicial review under ", ["stat", "§ 31-6-44.1", "31-6-44.1"], ", subject to standing."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-43(e) — Letters of determination", "target": "31-6-43" },
+        { "kind": "search", "label": "Browse DET-EQT dockets", "target": "docket-type:DET-EQT" }
+      ],
+      "revisions": [
+        { "date": "Apr 22, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "batching",
+      "group": "Process & Procedure",
+      "title": "Batching Cycles & Comparative Review",
+      "readTime": "5 min",
+      "updated": "Mar 14, 2026",
+      "lead": "How competing applications for the same need are grouped, reviewed head-to-head, and decided under the comparative-review framework.",
+      "body": [
+        { "p": ["Where more than one applicant seeks to meet the same identified need, DCH groups the applications into a batching cycle and conducts a comparative review, selecting among applicants rather than judging each in isolation."] },
+        { "h": "Why it matters" },
+        { "p": ["Comparative review reshapes strategy: an application strong in the abstract can still lose to a better-scored competitor. Superior applications document need, access for the underserved, and financial feasibility in the terms the governing rule scores."] },
+        { "note": ["Track the batching schedule on the DCH project lists. The window to file a competing application closes quickly once a cycle opens."] }
+      ],
+      "related": [
+        { "kind": "topic", "label": "CON II — Application Process", "target": "ii" },
+        { "kind": "wiki", "label": "The Review Cycle: Letter of Intent to Final Order", "target": "cycle" }
+      ],
+      "revisions": [
+        { "date": "Mar 14, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "considerations",
+      "group": "Substantive Review",
+      "title": "The Review Considerations of O.C.G.A. § 31-6-42",
+      "readTime": "7 min",
+      "updated": "Jun 2, 2026",
+      "lead": "The general statutory considerations that govern every CON decision, and how they interact with the service-specific need methodologies.",
+      "body": [
+        { "p": ["Section ", ["stat", "31-6-42", "31-6-42"], " lists the general considerations DCH must weigh — need, financial feasibility, access for the medically underserved, quality, and the availability of less costly alternatives, among others. These apply across all service types."] },
+        { "h": "General vs. specific" },
+        { "p": ["The general considerations of § 31-6-42 operate alongside the service-specific rules in ", ["stat", "111-2-2", "rule-111-2-2-.09"], ". Where a specific need methodology governs (e.g., ", ["stat", "MRI", "rule-111-2-2-.40"], ", cardiac catheterization, beds), it supplies the numeric standard; § 31-6-42 supplies the broader qualitative frame."] },
+        { "h": "Litigating need" },
+        { "p": ["Most contested cases turn on the \"need\" and \"less costly alternative\" considerations. Expert utilization projections, service-area definitions, and demographic data are the usual battlegrounds; the record built before the hearing officer is what the superior court later reviews. Compare ", ["case", "Coastal Empire Hosp. Auth. v. Piedmont Coastal Health, LLC", "coastal-empire"], " (referral patterns must inform the service area) with ", ["case", "In re Application of Three Rivers Imaging, LLC", "three-rivers"], " (applicant failed to rebut the methodology)."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-42 — Review considerations", "target": "31-6-42" },
+        { "kind": "topic", "label": "CON III — Substantive Review", "target": "iii" }
+      ],
+      "revisions": [
+        { "date": "Jun 2, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "methodologies",
+      "group": "Substantive Review",
+      "title": "Service-Specific Need Methodologies",
+      "readTime": "4 min",
+      "updated": "May 8, 2026",
+      "lead": "Where the numeric need standards live, and how to find the methodology that controls a given service.",
+      "body": [
+        { "p": ["For many services the numeric need determination is governed by a service-specific methodology in Ga. Comp. R. & Regs. 111-2-2 — for example the ", ["stat", "MRI methodology", "rule-111-2-2-.40"], ", the ", ["stat", "cardiac catheterization rule", "rule-111-2-2-.22"], ", and the bed-need standards."] },
+        { "h": "Reading a methodology" },
+        { "p": ["Each methodology defines the service area, the utilization or population inputs, and the formula that produces the numeric need figure. The applicant must show unmet need under that formula; a competitor will attack the inputs."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "Rule 111-2-2-.40 — MRI", "target": "rule-111-2-2-.40" },
+        { "kind": "tool", "label": "Browse Statutes & Rules", "target": "/statutes" }
+      ],
+      "revisions": [
+        { "date": "May 8, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "appeals",
+      "group": "Adjudication & Appeals",
+      "title": "Administrative Appeals: Hearing Officer & CON Appeal Panel",
+      "readTime": "6 min",
+      "updated": "Jun 6, 2026",
+      "lead": "The contested-case track — who hears it, the nature of the hearing, and how the Commissioner's review works.",
+      "body": [
+        { "p": ["When a party requests review under ", ["stat", "§ 31-6-44", "31-6-44"], ", the matter is assigned to a hearing officer of OSAH who conducts an evidentiary hearing under Chapter 13 of Title 50. The hearing officer weighs evidence and enters an initial decision."] },
+        { "h": "The initial decision" },
+        { "p": ["The initial decision contains findings of fact and conclusions of law. Because judicial review is confined to the record, the evidence developed here — expert testimony, exhibits, and stipulations — defines the ceiling of what any later court will consider."] },
+        { "h": "Commissioner review" },
+        { "p": ["Within 30 days, any party may seek review by the Commissioner (or CON Appeal Panel). Their decision is the final decision of the Department and starts the clock for judicial review under ", ["stat", "§ 31-6-44.1", "31-6-44.1"], "."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-44 — Administrative appeals", "target": "31-6-44" },
+        { "kind": "topic", "label": "CON V — Adjudication", "target": "v" }
+      ],
+      "revisions": [
+        { "date": "Jun 6, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "judicial",
+      "group": "Adjudication & Appeals",
+      "title": "Judicial Review & the Substantial-Evidence Standard",
+      "readTime": "6 min",
+      "updated": "Jun 20, 2026",
+      "lead": "How the superior court and appellate courts review a final CON decision — and why the standard of review usually decides the appeal.",
+      "body": [
+        { "p": ["Under ", ["stat", "§ 31-6-44.1", "31-6-44.1"], ", a party aggrieved by the final agency decision is entitled to judicial review in the superior court. Review is on the record, without a jury, and the court does not substitute its judgment for the agency's on questions of fact."] },
+        { "h": "The standard" },
+        { "p": ["The agency's factual findings are upheld if supported by substantial evidence — such relevant evidence as a reasonable mind might accept as adequate. Legal conclusions are reviewed de novo, but the deferential fact standard is why most appeals rise or fall on how the record was built below. ", ["case", "Riverstone Imaging, LLC v. Ga. Dep't of Cmty. Health", "riverstone-imaging"], ", 372 Ga. App. 488 (2025), is the leading recent application."] },
+        { "note": ["\"Substantial evidence\" is the single most-litigated phrase in Georgia CON appeals. Trace™ flags every decision that has distinguished or criticized a leading substantial-evidence holding."] },
+        { "h": "Further appeal" },
+        { "p": ["From the superior court, an aggrieved party may appeal to the Court of Appeals or the Supreme Court of Georgia under the ordinary appellate rules."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-44.1 — Judicial review", "target": "31-6-44.1" },
+        { "kind": "topic", "label": "CON VI — Appellate Review", "target": "vi" },
+        { "kind": "tool", "label": "Trace™ Citator", "target": "/citator/riverstone-imaging" }
+      ],
+      "revisions": [
+        { "date": "Jun 20, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    },
+    {
+      "articleId": "reform",
+      "group": "Recent Developments",
+      "title": "Recent CON Reform & Its Aftermath",
+      "readTime": "5 min",
+      "updated": "Jun 25, 2026",
+      "lead": "A summary of the most significant recent statutory amendments to Georgia's CON program and their practical effect on filings.",
+      "body": [
+        { "p": ["Georgia's CON statute has been amended several times in recent sessions, adjusting thresholds, exemptions, and expedited pathways for certain services. The changes have shifted the mix of dockets DCH receives and reshaped several need methodologies."] },
+        { "h": "Practical effects" },
+        { "list": [
+          ["More activities clearing review as LNRs"],
+          ["Revised thresholds for equipment acquisitions under ", ["stat", "§ 31-6-45", "31-6-45"]],
+          ["New or amended expedited pathways for defined services"],
+          ["Continued litigation over transition provisions"]
+        ] },
+        { "note": ["This article tracks amendments as they take effect. Confirm the operative version of any section for the date of your client's filing — transition provisions have generated their own appeals."] }
+      ],
+      "related": [
+        { "kind": "statute", "label": "§ 31-6-40 — Activities requiring CON", "target": "31-6-40" },
+        { "kind": "tool", "label": "Statutes & Rules", "target": "/statutes" }
+      ],
+      "revisions": [
+        { "date": "Jun 25, 2026", "text": "Editorial review and republication" },
+        { "date": "Jan 9, 2026", "text": "Initial publication" }
+      ]
+    }
+  ],
+  "pending": {
+    "articleId": "judicial",
+    "revisionId": 101,
+    "author": "J. Anderson",
+    "sourceLabel": "MRI need — Bartow PSA watch (completed research project)",
+    "submittedAt": "Jun 25, 2026",
+    "newHeading": "Remand practice after Riverstone",
+    "newText": "Where the reviewing court reverses for want of substantial evidence, the usual remedy is remand for reconsideration under the correct service-area definition rather than outright grant. On remand the agency reopens the record only as to the defective finding; the applicant's burden under Rule 111-2-2-.40 otherwise remains as originally framed. Riverstone's remand (CON 2026007) is the live example — the OSAH hearing on the redefined three-county PSA is set for Aug 5, 2026."
+  }
+}

@@ -65,7 +65,10 @@ ALTER TABLE con.matter ADD
     decision_deadline      DATE          NULL,
     batching_cycle         NVARCHAR(60)  NULL,
     competing_docket_ids   NVARCHAR(MAX) NULL,   -- JSON array of docket ids
-    precedent_signal       NVARCHAR(20)  NULL;   -- valid|questioned|overturned|noprecedent
+    -- valid|questioned|overturned|noprecedent. Reserved for a future write-back job;
+    -- today common/proceeding.py computes the equivalent signal on read, so this column
+    -- stays NULL unless something explicitly populates it. See docs/05 "precedent_signal".
+    precedent_signal       NVARCHAR(20)  NULL;
 GO
 
 ALTER TABLE con.matter ADD

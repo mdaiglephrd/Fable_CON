@@ -1,9 +1,9 @@
 /*
  * Route table — one route per handoff view (28 including Compare), all inside
- * the global Shell layout. Core phase-1 screens are full implementations;
- * the rest render a clean "coming in phase 2" placeholder so navigation is
- * complete. Deep-link routes /document/:entryId and /docket/:docketId are
- * load-bearing (the Copilot agent links straight into them).
+ * the global Shell layout. Every screen is a real implementation (phase 1's
+ * core five plus phase 2's remaining 22 — no placeholders remain). Deep-link
+ * routes /document/:entryId and /docket/:docketId are load-bearing (the
+ * Copilot agent links straight into them).
  */
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
@@ -15,31 +15,29 @@ const Results = lazy(() => import('./views/Results'));
 const DocumentView = lazy(() => import('./views/DocumentView'));
 const Docket = lazy(() => import('./views/Docket'));
 const Citator = lazy(() => import('./views/Citator'));
-const P = {
-  Topics: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.TopicsView }))),
-  Statute: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.StatuteView }))),
-  Statutes: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.StatutesIndexView }))),
-  History: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.HistoryView }))),
-  Alerts: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.AlertsView }))),
-  Submit: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.SubmitView }))),
-  Applications: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.ApplicationsView }))),
-  Stats: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.StatsView }))),
-  Calculator: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.CalculatorView }))),
-  Compare: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.CompareView }))),
-  Map: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.MapView }))),
-  Kb: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.KbView }))),
-  Wiki: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.WikiView }))),
-  Research: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.ResearchView }))),
-  NewSearch: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.NewSearchView }))),
-  NewProject: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.NewProjectView }))),
-  Library: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.LibraryView }))),
-  ProjectDetail: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.ProjectDetailView }))),
-  Proceedings: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.ProceedingsView }))),
-  MatterHistory: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.MatterHistoryView }))),
-  Tools: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.ToolsView }))),
-  Upload: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.UploadView }))),
-  Reports: lazy(() => import('./views/Placeholders').then((m) => ({ default: m.ReportsView }))),
-};
+const Topics = lazy(() => import('./views/Topics'));
+const StatutesIndex = lazy(() => import('./views/StatutesIndex'));
+const Statute = lazy(() => import('./views/Statute'));
+const History = lazy(() => import('./views/History'));
+const Alerts = lazy(() => import('./views/Alerts'));
+const Submit = lazy(() => import('./views/Submit'));
+const Applications = lazy(() => import('./views/Applications'));
+const Stats = lazy(() => import('./views/Stats'));
+const Calculator = lazy(() => import('./views/Calculator'));
+const Compare = lazy(() => import('./views/Compare'));
+const MapView = lazy(() => import('./views/MapView'));
+const Kb = lazy(() => import('./views/Kb'));
+const Wiki = lazy(() => import('./views/Wiki'));
+const Research = lazy(() => import('./views/Research'));
+const NewSearch = lazy(() => import('./views/NewSearch'));
+const NewProject = lazy(() => import('./views/NewProject'));
+const Library = lazy(() => import('./views/Library'));
+const ProjectDetail = lazy(() => import('./views/ProjectDetail'));
+const Proceedings = lazy(() => import('./views/Proceedings'));
+const MatterHistory = lazy(() => import('./views/MatterHistory'));
+const Tools = lazy(() => import('./views/Tools'));
+const Upload = lazy(() => import('./views/Upload'));
+const Reports = lazy(() => import('./views/Reports'));
 
 function Loading() {
   return (
@@ -65,31 +63,32 @@ export default function App() {
             ['/document/:entryId', <DocumentView />],
             ['/docket/:docketId', <Docket />],
             ['/citator/:entryId', <Citator />],
-            ['/topics', <P.Topics />],
-            ['/topics/:topicId', <P.Topics />],
-            ['/statutes', <P.Statutes />],
-            ['/statute/:statuteId', <P.Statute />],
-            ['/history', <P.History />],
-            ['/alerts', <P.Alerts />],
-            ['/submit', <P.Submit />],
-            ['/applications', <P.Applications />],
-            ['/stats', <P.Stats />],
-            ['/calculator', <P.Calculator />],
-            ['/compare', <P.Compare />],
-            ['/map', <P.Map />],
-            ['/kb', <P.Kb />],
-            ['/wiki', <P.Wiki />],
-            ['/wiki/:articleId', <P.Wiki />],
-            ['/research', <P.Research />],
-            ['/search/new', <P.NewSearch />],
-            ['/projects/new', <P.NewProject />],
-            ['/library', <P.Library />],
-            ['/projects/:projectId', <P.ProjectDetail />],
-            ['/proceedings', <P.Proceedings />],
-            ['/proceedings/history', <P.MatterHistory />],
-            ['/tools', <P.Tools />],
-            ['/upload', <P.Upload />],
-            ['/reports', <P.Reports />],
+            ['/topics', <Topics />],
+            ['/topics/:topicId', <Topics />],
+            ['/statutes', <StatutesIndex />],
+            ['/statute/:statuteId', <Statute />],
+            ['/history', <History />],
+            ['/history/:docketId', <History />],
+            ['/alerts', <Alerts />],
+            ['/submit', <Submit />],
+            ['/applications', <Applications />],
+            ['/stats', <Stats />],
+            ['/calculator', <Calculator />],
+            ['/compare', <Compare />],
+            ['/map', <MapView />],
+            ['/kb', <Kb />],
+            ['/wiki', <Wiki />],
+            ['/wiki/:articleId', <Wiki />],
+            ['/research', <Research />],
+            ['/search/new', <NewSearch />],
+            ['/projects/new', <NewProject />],
+            ['/library', <Library />],
+            ['/projects/:projectId', <ProjectDetail />],
+            ['/proceedings', <Proceedings />],
+            ['/proceedings/history', <MatterHistory />],
+            ['/tools', <Tools />],
+            ['/upload', <Upload />],
+            ['/reports', <Reports />],
           ] as [string, JSX.Element][]
         ).map(([path, element]) => (
           <Route key={path} path={path} element={<Suspense fallback={<Loading />}>{element}</Suspense>} />

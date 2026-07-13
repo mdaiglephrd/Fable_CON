@@ -1,9 +1,9 @@
 # Georgia CON Research Console (`web/`)
 
 React SPA for the CON research layer — a high-fidelity recreation of the design
-handoff in `web/design-reference/` (do not ship that folder). Phase 1 delivers
-the global shell, the full route table, and the five core screens; everything
-else renders a routed "coming in phase 2" page so navigation never dead-ends.
+handoff in `web/design-reference/` (do not ship that folder). All 28 handoff
+screens (the phase-1 shell/router/core five plus the full phase-2 build-out)
+are real implementations — there are no remaining placeholders.
 
 ## Stack
 
@@ -81,7 +81,8 @@ the API's `CONSOLE_ORIGIN` CORS allow-list includes the SWA hostname.
 
 ## Routes
 
-Core (phase 1, high fidelity to the comp):
+Core (high fidelity to the comp; `/document/:entryId` and `/docket/:docketId`
+are the deep-link routes the Copilot agent depends on — do not rename them):
 
 | Route                 | Screen                                                      |
 | --------------------- | ----------------------------------------------------------- |
@@ -91,21 +92,39 @@ Core (phase 1, high fidelity to the comp):
 | `/docket/:docketId`   | Docket console — flowchart / timeline / table, tooltips     |
 | `/citator/:entryId`   | Trace™ citator — flags, citing cases, authorities           |
 
-`/document/:entryId` and `/docket/:docketId` are the deep-link routes the
-Copilot agent depends on — do not rename them.
+Knowledge base, research, proceedings, and analytics (all real screens, wired
+to `src/lib/api.ts`; fixture mode by default so every one renders standalone):
 
-Phase-2 placeholders (routed, breadcrumbed): `/topics`, `/topics/:topicId`,
-`/statutes`, `/statute/:statuteId`, `/history`, `/alerts`, `/submit`,
-`/applications`, `/stats`, `/calculator`, `/compare`, `/map`, `/kb`, `/wiki`,
-`/wiki/:articleId`, `/research`, `/search/new`, `/projects/new`, `/library`,
-`/projects/:projectId`, `/proceedings`, `/proceedings/history`, `/tools`,
-`/upload`, `/reports`.
+| Route                              | Screen                                                          |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| `/topics`, `/topics/:topicId`       | Topic & key-number tree with detail (authorities, sub-keys, cases) |
+| `/statutes`                        | Statutes & Rules index (O.C.G.A. + DCH rules, kind tabs)         |
+| `/statute/:statuteId`              | Annotated statute/rule reader — TOC, cross-refs, citing cases    |
+| `/history`, `/history/:docketId`   | Docket filing timeline, filterable by event type                |
+| `/alerts`                          | Saved-search / docket-watch manager — list, create, deactivate  |
+| `/applications`                    | Live docket tracker — status cards, type tabs, mini progress    |
+| `/submit`                          | 3-step submission wizard (details → metadata → review)          |
+| `/kb`                              | Knowledge Base landing — hub into Wiki / Statutes / Topics      |
+| `/wiki`, `/wiki/:articleId`        | CON Wiki index + article (TOC, related, revisions, edit review) |
+| `/research`                        | Research landing — quick search / new project / library entries |
+| `/search/new`                      | Advanced structured query builder                                |
+| `/projects/new`                    | New research project form                                        |
+| `/library`                         | Research library — open vs. saved project cards                 |
+| `/projects/:projectId`             | Project detail — saved/flagged documents, resume/complete       |
+| `/proceedings`                     | My Proceedings landing — tracked matters, alerts/history hubs   |
+| `/proceedings/history`             | Proceedings activity log — orders, filings, alerts, deadlines   |
+| `/tools`                           | Analytics & Tools hub                                            |
+| `/stats`                           | Outcome statistics — KPIs, by-service/year/type, appeal panel   |
+| `/calculator`                      | Deadline calculator (docket family + trigger event + date)      |
+| `/compare`                         | Side-by-side two-decision comparison                             |
+| `/map`                             | Service-area map — 159-county tile choropleth                   |
+| `/upload`                          | Upload landing                                                   |
+| `/reports`                         | Weekly digest — filings, determinations, deadlines, alerts      |
 
-## Phase 2
-
-The placeholder views above get their full implementations (topic tree,
-statute reader, wiki + review flow, alerts manager, submission wizard, stats,
-calculator, compare, map, research projects), wired to the already-typed API
-client (`src/lib/api.ts` covers cases, proceedings, citator, topics, statutes,
-history, stats, deadlines, search/matters/documents, and projects/alerts/wiki
-CRUD).
+Fixture-only data lives in `src/lib/{recentDockets.json, taxonomy.ts,
+statutesData.ts, wikiFixtures.json, deadlineRules.ts, vocab.ts}`; the last two
+are hand ports of `common/deadline_rules.py` and `common/vocab.py` used only
+when `VITE_USE_FIXTURES=true` (the Python modules stay the source of truth —
+keep them in sync by hand). `src/lib/taxonomy.ts` and `src/lib/statutesData.ts`
+mirror the design comp's TAXONOMY/KEY_DETAILS and STATUTE_TOC/STATUTE_CONTENT/
+RULES_CONTENT blocks.
