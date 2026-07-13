@@ -13,11 +13,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from common.file_identity import hash_file
+from common.file_identity import (
+    KIND_HTML,
+    KIND_IMAGE,
+    KIND_PDF,
+    KIND_TEXT,
+    hash_file,
+    sniff_type,
+)
 from common.json_logging import configure_json_logging
 from ingest.tag_crosswalk import CrosswalkIndex, MatchCandidate, resolve_entry_id
 from ingest.tag_enumerate import CandidateFile
-from ingest.tag_ocr import NativeTextEngine, OcrEngine, OcrResult
+from ingest.tag_ocr import (
+    NativeTextEngine,
+    OcrEngine,
+    OcrResult,
+    extract_html_text,
+    extract_plain_text,
+)
 
 log = configure_json_logging(__name__)
 
@@ -89,11 +102,22 @@ def process_one_file(
 
 
 def _extract_text(path: Path, engine: OcrEngine) -> tuple[str, OcrResult | None, str | None]:
+    """Route by sniffed content kind (the corpus is mostly extension-less):
+    pdf -> native text layer when present, else OCR; image -> OCR;
+    text/html -> direct read; unknown -> Failed, no OCR attempt."""
     try:
-        if path.suffix.lower() == ".pdf" and NativeTextEngine.has_native_text(path):
-            result = NativeTextEngine().extract(path)
-        else:
+        kind = sniff_type(path)
+        if kind == KIND_PDF:
+            result = NativeTextEngine.extract_if_native(path) or engine.extract(path)
+        elif kind == KIND_IMAGE:
             result = engine.extract(path)
+        elif kind == KIND_TEXT:
+            result = extract_plain_text(path)
+        elif kind == KIND_HTML:
+            result = extract_html_text(path)
+        else:
+            log.warning("unsupported file type", extra={"file_path": str(path), "kind": kind})
+            return OCR_STATUS_FAILED, None, f"unsupported file type (sniffed: {kind})"
     except Exception as exc:  # one bad file must never abort the run
         log.warning("ocr failed", extra={"file_path": str(path), "error": str(exc)})
         return OCR_STATUS_FAILED, None, f"{type(exc).__name__}: {exc}"

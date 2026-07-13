@@ -38,6 +38,11 @@ def _make_native_pdf(path: Path, text: str) -> None:
     c.save()
 
 
+def _make_fake_jpeg(path: Path) -> None:
+    # JPEG magic bytes so sniff_type routes it to the OCR engine.
+    path.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 64)
+
+
 def test_resolves_and_extracts_native_pdf(tmp_path):
     pdf_dir = tmp_path / "CON2005029" / "A Main Application"
     pdf_dir.mkdir(parents=True)
@@ -62,7 +67,7 @@ def test_falls_back_to_injected_engine_for_image(tmp_path):
     image_dir = tmp_path / "CON2005029" / "A Main Application"
     image_dir.mkdir(parents=True)
     image_path = image_dir / "CON2005029 Main Application.jpg"
-    image_path.write_bytes(b"not a real image, just bytes")
+    _make_fake_jpeg(image_path)
 
     index = CrosswalkIndex(
         [IndexRow(path=CON_PATH, name="CON2005029 Main Application", entry_id=1043, page_count=1)]
@@ -94,7 +99,7 @@ def test_unresolved_when_no_docket_in_path(tmp_path):
 def test_ocr_failure_is_captured_not_raised(tmp_path):
     image_path = tmp_path / "CON2005029" / "broken.jpg"
     image_path.parent.mkdir(parents=True)
-    image_path.write_bytes(b"junk")
+    _make_fake_jpeg(image_path)
 
     index = CrosswalkIndex([])
     fake_engine = _FakeEngine(exc=RuntimeError("model exploded"))
@@ -110,7 +115,7 @@ def test_page_count_retry_resolves_ambiguous_match(tmp_path):
     a_dir = tmp_path / "CON2005029" / "B Appendices"
     a_dir.mkdir(parents=True)
     file_path = a_dir / "CON2005029 Appendix.jpg"
-    file_path.write_bytes(b"junk")
+    _make_fake_jpeg(file_path)
 
     index = CrosswalkIndex(
         [
@@ -139,3 +144,68 @@ def test_page_count_retry_resolves_ambiguous_match(tmp_path):
 
     assert doc.resolved
     assert doc.entry_id == 1045
+
+
+# --- sniff-based routing (the real corpus is mostly extension-less) ----------
+
+
+def test_extensionless_native_pdf_routes_to_native_text(tmp_path):
+    pdf_dir = tmp_path / "CON2005029" / "A Main Application"
+    pdf_dir.mkdir(parents=True)
+    pdf_path = pdf_dir / "CON2005029 Main Application"  # no .pdf extension
+    _make_native_pdf(pdf_path, "Plenty of real extractable application text lives on this page.")
+
+    index = CrosswalkIndex(
+        [IndexRow(path=CON_PATH, name="CON2005029 Main Application", entry_id=1043, page_count=1)]
+    )
+    fake_engine = _FakeEngine()  # must not be called
+    doc = process_one_file(_candidate(pdf_path), fake_engine, index)
+
+    assert doc.ocr_status == OCR_STATUS_SUCCEEDED
+    assert doc.ocr_result.text_source == "native"
+    assert fake_engine.calls == []
+
+
+def test_plain_text_file_is_read_directly(tmp_path):
+    txt_dir = tmp_path / "CON2005029" / "L Other"
+    txt_dir.mkdir(parents=True)
+    txt_path = txt_dir / "CON2005029 Notes.txt"
+    txt_path.write_text("Reviewer notes about the application.")
+
+    index = CrosswalkIndex([])
+    fake_engine = _FakeEngine()  # must not be called
+    doc = process_one_file(_candidate(txt_path), fake_engine, index)
+
+    assert doc.ocr_status == OCR_STATUS_SUCCEEDED
+    assert doc.ocr_result.text == "Reviewer notes about the application."
+    assert doc.ocr_result.text_source == "native"
+    assert fake_engine.calls == []
+
+
+def test_html_file_is_read_with_tags_stripped(tmp_path):
+    htm_dir = tmp_path / "CON2005029" / "K Public Notices"
+    htm_dir.mkdir(parents=True)
+    htm_path = htm_dir / "CON2005029 Notice.htm"
+    htm_path.write_text("<html><body><p>Public notice of the CON application.</p></body></html>")
+
+    index = CrosswalkIndex([])
+    doc = process_one_file(_candidate(htm_path), _FakeEngine(), index)
+
+    assert doc.ocr_status == OCR_STATUS_SUCCEEDED
+    assert "Public notice" in doc.ocr_result.text
+    assert "<p>" not in doc.ocr_result.text
+
+
+def test_unknown_binary_fails_cleanly_without_ocr_attempt(tmp_path):
+    bin_dir = tmp_path / "CON2005029"
+    bin_dir.mkdir(parents=True)
+    bin_path = bin_dir / "mystery"
+    bin_path.write_bytes(b"\x00\x01\x02\x03" * 32)
+
+    index = CrosswalkIndex([])
+    fake_engine = _FakeEngine(exc=AssertionError("engine must not be called for unknown kinds"))
+    doc = process_one_file(_candidate(bin_path), fake_engine, index)
+
+    assert doc.ocr_status == OCR_STATUS_FAILED
+    assert "unsupported file type" in doc.error
+    assert fake_engine.calls == []

@@ -62,6 +62,20 @@ def already_succeeded(conn: Any, path_hash: str, file_hash: str) -> bool:
     return row is not None and row[0] == STATUS_SUCCEEDED
 
 
+def succeeded_source_keys(conn: Any) -> set[tuple[str, str]]:
+    """All (path_hash, file_hash) pairs already loaded successfully.
+
+    Preloaded once per orchestrator run so the resume skip-check is a set
+    lookup instead of ~150K serial SELECTs (the same preload pattern as
+    functions/processing.py::succeeded_keys)."""
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT path_hash, file_hash FROM con.tag_source_file WHERE status = ?",
+        (STATUS_SUCCEEDED,),
+    )
+    return {(row[0], row[1]) for row in cursor.fetchall()}
+
+
 _RECORD_PROCESSED_SQL = """
 MERGE con.tag_source_file AS t
 USING (SELECT ? AS path_hash, ? AS file_hash) AS s
@@ -91,6 +105,31 @@ def record_processed(
             file_path, entry_id, status, detail,
         ),
     )
+
+
+def _warn_if_entry_id_already_loaded_from_other_file(
+    conn: Any, doc: ProcessedDocument, path_hash: str
+) -> None:
+    """Fuzzy resolution can map two distinct files onto one entry_id; the
+    later one silently last-wins on con.document. Surface it in the JSON log
+    (one indexed query on IX_tag_source_file_entry_id) so a systematic
+    crosswalk mis-match is visible instead of silent."""
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) FROM con.tag_source_file"
+        " WHERE entry_id = ? AND status = ? AND (path_hash <> ? OR file_hash <> ?)",
+        (doc.entry_id, STATUS_SUCCEEDED, path_hash, doc.file_hash),
+    )
+    row = cursor.fetchone()
+    if row is not None and row[0]:
+        log.warning(
+            "entry_id already loaded from a different file; this load overwrites it",
+            extra={
+                "entry_id": doc.entry_id,
+                "file_path": str(doc.candidate.path),
+                "prior_source_files": int(row[0]),
+            },
+        )
 
 
 # --------------------------------------------------------------------------
@@ -123,6 +162,12 @@ def _to_tag_export_row(doc: ProcessedDocument) -> dict:
         applicant = _applicant_from_index_path(
             doc.match_candidates[0].index_row.path, doc.docket_variants
         )
+    # OcrResult.confidence is 0-1 (OCR-engine score); con.document.ocr_confidence
+    # is the repo's 0-100 scale (see docs/03: values like 97.5). document_text's
+    # di_confidence keeps the 0-1 scale (docs/05: 0.98) -- see _to_text_record.
+    ocr_confidence = None
+    if doc.ocr_result is not None and doc.ocr_result.confidence is not None:
+        ocr_confidence = round(doc.ocr_result.confidence * 100, 2)
     return {
         "entry_id": doc.entry_id,
         "docket_id": doc.docket_id,
@@ -135,7 +180,7 @@ def _to_tag_export_row(doc: ProcessedDocument) -> dict:
         "page_count": doc.ocr_result.page_count if doc.ocr_result else None,
         "source_path": str(doc.candidate.path),
         "ocr_status": doc.ocr_status,
-        "ocr_confidence": doc.ocr_result.confidence if doc.ocr_result else None,
+        "ocr_confidence": ocr_confidence,
         "text_source": doc.ocr_result.text_source if doc.ocr_result else None,
     }
 
@@ -173,6 +218,8 @@ def load_one_record(conn: Any, doc: ProcessedDocument) -> LoadResult:
             STATUS_UNRESOLVED, "crosswalk did not resolve an entry_id",
         )
         return LoadResult(STATUS_UNRESOLVED, None, doc.docket_id, "crosswalk unresolved")
+
+    _warn_if_entry_id_already_loaded_from_other_file(conn, doc, path_hash)
 
     try:
         shaped = load_tags.shape_row(_to_tag_export_row(doc), row_number=1)

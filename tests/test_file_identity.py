@@ -1,6 +1,15 @@
 import hashlib
 
-from common.file_identity import hash_file, hash_path
+from common.file_identity import (
+    KIND_HTML,
+    KIND_IMAGE,
+    KIND_PDF,
+    KIND_TEXT,
+    KIND_UNKNOWN,
+    hash_file,
+    hash_path,
+    sniff_type,
+)
 
 
 def test_hash_file_matches_stdlib_sha256(tmp_path):
@@ -55,3 +64,52 @@ def test_hash_path_is_fixed_length_regardless_of_input_length():
     short = hash_path("x")
     long = hash_path("x" * 5000)
     assert len(short) == len(long) == 64
+
+
+# --- sniff_type -------------------------------------------------------------
+
+
+def test_sniff_pdf_by_magic_bytes_without_extension(tmp_path):
+    path = tmp_path / "CON2005029 Main Application"  # extension-less, like the real corpus
+    path.write_bytes(b"%PDF-1.7\n...rest of pdf...")
+    assert sniff_type(path) == KIND_PDF
+
+
+def test_sniff_jpeg_and_png_and_tiff_by_magic_bytes(tmp_path):
+    jpeg = tmp_path / "scan1"
+    jpeg.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 16)
+    png = tmp_path / "scan2"
+    png.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 16)
+    tiff = tmp_path / "scan3"
+    tiff.write_bytes(b"II*\x00" + b"\x00" * 16)
+    assert sniff_type(jpeg) == KIND_IMAGE
+    assert sniff_type(png) == KIND_IMAGE
+    assert sniff_type(tiff) == KIND_IMAGE
+
+
+def test_sniff_html_by_content(tmp_path):
+    path = tmp_path / "letter"
+    path.write_bytes(b"<!DOCTYPE html><html><body>Notice</body></html>")
+    assert sniff_type(path) == KIND_HTML
+
+
+def test_sniff_extension_fallback_for_text(tmp_path):
+    path = tmp_path / "notes.txt"
+    path.write_bytes(b"plain notes")
+    assert sniff_type(path) == KIND_TEXT
+
+
+def test_sniff_printable_heuristic_for_extensionless_text(tmp_path):
+    path = tmp_path / "readme"
+    path.write_bytes(b"Just some plain readable text with no markers at all.")
+    assert sniff_type(path) == KIND_TEXT
+
+
+def test_sniff_unknown_for_binary_junk(tmp_path):
+    path = tmp_path / "mystery.bin"
+    path.write_bytes(b"\x00\x01\x02\x03" * 32)
+    assert sniff_type(path) == KIND_UNKNOWN
+
+
+def test_sniff_unknown_for_unreadable_path(tmp_path):
+    assert sniff_type(tmp_path / "does-not-exist") == KIND_UNKNOWN
