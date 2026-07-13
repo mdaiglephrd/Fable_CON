@@ -12,3 +12,5 @@ azure-storage-blob>=12.19
 azure-search-documents>=11.4
 azure-functions>=1.18
 openai>=1.30
+openocr-python>=0.1.5
+openpyxl>=3.1

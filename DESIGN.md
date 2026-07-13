@@ -524,3 +524,102 @@ hosting; Entra auth via staticwebapp.config.json. One route per handoff view.
   seed SQL, same as v1).
 - Parity: common/proceeding.py and web/src/lib/docketEngine.ts must both match golden fixtures generated
   from tests/fixtures/handoff/docket-engine.js via node.
+
+---
+
+# TAG ETL LAYER (Phase 1) — Georgia CON Tagging Taxonomy
+
+Bulk-loads the ~150K-document SSD corpus (the same Laserfiche `HealthPlanning` repository v1/v2
+already model, confirmed via the operator-supplied document index — see docs/07) into the *existing*
+`con.matter`/`con.document`/`con.document_text` tables, and stands up the schema Harvey's Phase 2
+Axis 1-4 tagging (docs/08) writes into. Phase 1 loads document records only; it never applies tags.
+
+## Schema — Axis 1-4 (migrations 0010-0012; additive on the existing `con` schema, no new database)
+
+### Vocab/lookup tables (0010; seeded verbatim from GeorgiaCONTaggingTaxonomy_2.docx)
+- `con.vocab_axis1_proceeding_type(code NVARCHAR(20) PK, description NVARCHAR(400) NULL)` — 5 values:
+  CON, DET, DET-ASC, DET-EQT, Other.
+- `con.vocab_axis2_authority_type(code NVARCHAR(60) PK, description NVARCHAR(400) NULL)` — 12 values
+  incl. Masterfile.
+- `con.axis3_substantive_issue(code NVARCHAR(10) PK, parent_code NVARCHAR(10) NULL FK->self,
+  label NVARCHAR(600), citation NVARCHAR(1000) NULL, sort_order INT)` — 125 rows (100-900 series).
+- `con.axis4_procedural_issue` — same shape, P-prefixed codes, 59 rows (P100-P900 series).
+- Mirrored in `common/axis_taxonomy.py` (same "constants mirror the seed data" convention as
+  common/vocab.py): `AXIS1_PROCEEDING_TYPE`, `AXIS2_AUTHORITY_TYPE` (dicts, code -> description),
+  `AXIS3_SUBSTANTIVE_ISSUE`, `AXIS4_PROCEDURAL_ISSUE` (tuples of `AxisCode`), `AXIS3_BY_CODE`/
+  `AXIS4_BY_CODE` (dicts), `MASTERFILE = "Masterfile"`.
+
+### Tag-assignment tables (0011; empty after Phase 1 -- Phase 2/Harvey populates these)
+```
+con.document_axis1(entry_id FK->con.document, value FK->vocab_axis1_proceeding_type, PK(entry_id))
+con.document_axis2(entry_id FK->con.document, value FK->vocab_axis2_authority_type, PK(entry_id))
+con.document_axis3(entry_id FK->con.document, code  FK->axis3_substantive_issue, PK(entry_id, code))
+con.document_axis4(entry_id FK->con.document, code  FK->axis4_procedural_issue, PK(entry_id, code))
+```
+Masterfile rule (a document tagged Masterfile on Axis 2 carries no Axis 3/4 tags) is enforced by
+triggers in both directions (`trg_axis2_masterfile_guard`, `trg_axis3_masterfile_guard`,
+`trg_axis4_masterfile_guard`) AND mirrored in pure Python (`common/axis_validation.py::validate_tags`)
+so `ingest/load_axis_tags.py` rejects violations before ever reaching the triggers.
+
+### Idempotency ledger (0012)
+`con.tag_source_file(path_hash CHAR(64), file_hash CHAR(64), file_path NVARCHAR(1000),
+entry_id INT NULL FK->con.document, status NVARCHAR(20) CHECK IN ('Succeeded','Failed','Unresolved'),
+detail NVARCHAR(MAX), processed_at, PK(path_hash, file_hash))`. `path_hash`/`file_hash` are sha256 of
+the real file path string / file bytes (`common/file_identity.py` hash_path/hash_file) -- the file's
+stable identity is (path, content), but a real path is too long to use directly in a PK without risking
+SQL Server's 900-byte index key limit, hence hashing both dimensions to fixed-size columns. Mirrors
+con.processed_blob's "only Succeeded blocks reprocessing" rule.
+
+## common/ — new modules
+- `common/axis_taxonomy.py`, `common/axis_validation.py` — as above.
+- `common/file_identity.py` — `hash_file(path) -> str`, `hash_path(path: str) -> str` (both sha256).
+- `common/json_logging.py` — `configure_json_logging(name) -> Logger`, structured JSON log records.
+  Used only by `ingest/tag_*` modules -- a deliberate, scoped divergence from the rest of the repo's
+  plain stdlib `logging` convention, per this pipeline's own quality bar.
+- `common/docket.py` — `_LNR_RE` now recognizes the `ASC`/`EQT` subtype the same way `_DET_RE` already
+  did (`LNR-ASC2005006` -> canonical `LNR-ASC-2005006`), fixing a real gap surfaced by the actual SSD
+  index (pre-2019 LNR-ASC/LNR-EQT filings are ~4.3% of the real corpus). `common/docket_family.py`
+  needed no logic change (it already worked around the gap via a raw-string prefix check) but its
+  stale comment describing the gap was corrected.
+
+## ingest/ — new modules (flat, `tag_`-prefixed, matching the existing one-file-per-concern convention)
+- `ingest/tag_enumerate.py` — `enumerate_candidate_files(root) -> Iterator[CandidateFile]`. Pure
+  filesystem walk; no DB, no OCR.
+- `ingest/tag_crosswalk.py` — `load_index(xlsx_path) -> CrosswalkIndex` (operator-supplied
+  Path/Name/Type/Entry ID/Page Count index); `resolve_entry_id(file_path, index, docket=None,
+  actual_page_count=None) -> MatchResult` (fuzzy match via difflib + docket-scoped narrowing +
+  page-count cross-check; unresolved when below `MATCH_THRESHOLD` or ambiguous within
+  `AMBIGUITY_MARGIN`); `infer_doc_type_phase(path_parts) -> (doc_type, phase)` (folder-position table
+  grounded in real observed folder names, e.g. "A Main Application" -> Application/Request).
+- `ingest/tag_ocr.py` — `OcrEngine` protocol, `OcrResult`; `NativeTextEngine` (pdfplumber text-layer
+  fast path); `OpenOcrEngine` (wraps `openocr-python`, lazy-imported).
+- `ingest/tag_process.py` — `process_one_file(candidate, engine, index) -> ProcessedDocument`. Pure
+  given an engine + index; never raises (OCR failure and crosswalk-unresolved are both captured in the
+  returned object, not exceptions).
+- `ingest/tag_load.py` — `load_one_record(conn, doc) -> LoadResult`. Calls `ingest.load_tags.
+  shape_row`/`_write_shaped` and `ingest.load_document_text.shape_record`/`_write_shaped` directly
+  (the private `_write_shaped` helpers, not the public `load_rows`/`load_texts`, because those commit
+  on their own batch-size -- this module's caller owns commit cadence). Also owns the
+  `con.tag_source_file` ledger (`already_succeeded`/`record_processed`).
+- `ingest/tag_orchestrate.py` — CLI `python -m ingest.tag_orchestrate root --index-xlsx PATH [--apply]
+  [--batch-size 500] [--rejects out.csv]`. Thin wrapper composing the three stages above; batching is
+  implicit via `os.walk`'s natural directory-tree traversal order (no separate re-grouping pass, so the
+  whole corpus never needs buffering before work starts).
+- `ingest/load_axis_tags.py` — Phase 2's consumer loader. CLI `python -m ingest.load_axis_tags path
+  [--json] [--apply] [--batch-size 500] [--rejects out.csv]`. One row per `entry_id` + axis1/axis2/
+  axis3/axis4; `shape_tag_row` validates via `common.axis_validation.validate_tags` before any write;
+  a blank axis in a row leaves that axis's existing value(s) untouched (incremental tagging).
+
+## docs/ — new guides
+- `docs/07-tag-etl-runbook.md` — Phase 1 operational runbook (mirrors docs/03's structure).
+- `docs/08-harvey-tagging-guide.md` — Phase 2 guide for a human operator (Harvey Vaults per document
+  type, Review Table column mapping, the Masterfile-vs-"1 Master File"-folder pitfall, export + load
+  via `ingest/load_axis_tags.py`, verification queries).
+
+## Conventions (tag ETL layer)
+- No new database, no new schema name: Axis 1-4 tables live in the existing `con` schema, reusing
+  `common/db.py`'s existing `get_connection()` -- confirmed against real data (the SSD index's Entry ID
+  range and folder convention match this repo's own Laserfiche-sourced schema), not assumed.
+- File paths (`root`, `--index-xlsx`) are CLI arguments, never environment variables -- matching every
+  other loader in this repo (`ingest/load_tags.py`'s `path`, `ingest/index_diff.py`'s snapshot args).
+- Every `ingest/tag_*` module logs via `common/json_logging.py` (structured JSON), not plain `logging`.
