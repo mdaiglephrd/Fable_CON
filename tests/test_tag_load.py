@@ -106,6 +106,30 @@ def test_load_one_record_sets_stub_completeness_flag():
     assert '"stub_from_tag_etl"' in "".join(str(p) for p in matter_params if p)
 
 
+def test_confidence_scales_differ_between_document_and_document_text():
+    # con.document.ocr_confidence is 0-100 (repo convention: 97.5, 80.5);
+    # con.document_text.di_confidence is 0-1 (docs/05: 0.98). One 0-1 OCR
+    # score must land on both scales correctly.
+    conn = FakeConnection()
+    doc = _resolved_doc(
+        ocr_result=OcrResult(
+            text="Some extracted text.", confidence=0.87, engine="openocr-python",
+            page_count=1, text_source="ocr",
+        )
+    )
+    load_one_record(conn, doc)
+
+    _, doc_params = next(
+        (sql, params) for sql, params in conn.executed if "MERGE con.document AS t" in sql
+    )
+    assert 87.0 in doc_params  # ocr_confidence, scaled to 0-100
+    _, text_params = next(
+        (sql, params) for sql, params in conn.executed if "MERGE con.document_text" in sql
+    )
+    assert 0.87 in text_params  # di_confidence, raw 0-1
+    assert 87.0 not in text_params
+
+
 def test_load_one_record_skips_document_text_when_no_ocr_result():
     conn = FakeConnection()
     doc = _resolved_doc(ocr_status=OCR_STATUS_FAILED, ocr_result=None, error="boom")
