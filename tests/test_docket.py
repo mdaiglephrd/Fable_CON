@@ -69,6 +69,17 @@ class TestDetLnr:
         assert "DET-EQT2024-073" in dm.variants
         assert canon("DET-ASC 2026-004") == "DET-ASC-2026-004"
 
+    def test_lnr_subtypes_from_real_repository_folders(self):
+        # Pre-2019 LNR-ASC/LNR-EQT filings, as seen in the real Laserfiche
+        # folder names (e.g. "LNR-ASC2005006 Gastroenterology Specialists").
+        dm = normalize_docket("LNR-ASC2005006")
+        assert dm.canonical == "LNR-ASC-2005006"
+        assert dm.kind == "LNR"
+        assert "LNR-ASC2005006" in dm.variants
+        assert canon("LNR-EQT2005004") == "LNR-EQT-2005004"
+        found = extract_dockets("LNR-ASC2005006 Gastroenterology Specialists of Gwinnett")
+        assert [d.canonical for d in found] == ["LNR-ASC-2005006"]
+
     def test_det_subtype_extraction(self):
         found = extract_dockets("Appealed: DET-EQT2022-035 Allegiance; see DET2023-102.")
         assert [d.canonical for d in found] == ["DET-EQT-2022-035", "DET-2023-102"]

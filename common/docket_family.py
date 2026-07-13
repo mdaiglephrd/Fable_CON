@@ -43,9 +43,9 @@ def classify_family(docket_like: str) -> str:
 
     compact = _SEP_RUN.sub("-", docket_like.strip().upper())
 
-    # Prefer the shared normalizer's canonical form (it preserves DET subtypes
-    # and folds GA-legacy into CON); fall back to the compacted raw string for
-    # LNR subtypes, which the generic docket regex does not canonicalize.
+    # Prefer the shared normalizer's canonical form (it preserves DET/LNR
+    # subtypes and folds GA-legacy into CON); fall back to the compacted raw
+    # string in case normalization fails for some other reason.
     candidates = [compact]
     dm = normalize_docket(docket_like)
     if dm is not None:
