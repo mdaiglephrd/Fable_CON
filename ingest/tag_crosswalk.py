@@ -186,8 +186,30 @@ def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
-def _score(file_stem: str, row: IndexRow, actual_page_count: int | None) -> float:
-    score = _similarity(file_stem, row.name.lower())
+def _strip_docket(text: str, variants: tuple[str, ...]) -> str:
+    """Remove the docket id from a name before similarity scoring.
+
+    Every file and index row inside one docket's subtree shares the docket id
+    in its name, which inflates similarity between otherwise-unrelated names
+    ("DET2005018 Notes" vs "DET2005018 Determin Request" scores high purely
+    on the shared prefix). Scoring the distinctive remainder prevents that
+    false-positive class; when stripping leaves nothing (a file named exactly
+    the docket id), the caller falls back to the unstripped strings.
+    """
+    for variant in sorted(variants, key=len, reverse=True):
+        text = text.replace(variant.lower(), " ")
+    return " ".join(text.split())
+
+
+def _score(
+    file_stem: str, row: IndexRow, actual_page_count: int | None, variants: tuple[str, ...]
+) -> float:
+    stem_stripped = _strip_docket(file_stem, variants)
+    name_stripped = _strip_docket(row.name.lower(), variants)
+    if stem_stripped and name_stripped:
+        score = _similarity(stem_stripped, name_stripped)
+    else:
+        score = _similarity(file_stem, row.name.lower())
     if actual_page_count is not None and row.page_count is not None and row.page_count == actual_page_count:
         score += _PAGE_COUNT_BONUS
     return score
@@ -226,7 +248,11 @@ def resolve_entry_id(
     stem = file_path.stem.lower()
     scored = sorted(
         (
-            MatchCandidate(entry_id=row.entry_id, score=_score(stem, row, actual_page_count), index_row=row)
+            MatchCandidate(
+                entry_id=row.entry_id,
+                score=_score(stem, row, actual_page_count, docket.variants),
+                index_row=row,
+            )
             for row in rows
         ),
         key=lambda c: c.score,

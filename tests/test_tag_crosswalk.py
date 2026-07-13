@@ -174,3 +174,29 @@ def test_resolve_entry_id_handles_lnr_asc_docket():
     )
     assert result.entry_id == 5000
     assert result.docket_id == "LNR-ASC-2005006"
+
+
+def test_shared_docket_prefix_does_not_inflate_similarity():
+    # "DET2005018 Notes" and "DET2005018 Determin Request" share only the
+    # docket id; a file that is NOT in the index must not fuzzy-match onto an
+    # unrelated document purely on that shared prefix.
+    det_path = (
+        r"Regulatory Compliance\2005 Forward\2 Determinations\2005"
+        r"\DET2005018 Diagnostic Systems of Georgia LLC\1 Determination File"
+        r"\1 Evaluation\DET2005018 Determin Request"
+    )
+    index = _index(
+        [IndexRow(path=det_path, name="DET2005018 Determin Request", entry_id=5018, page_count=1)]
+    )
+    result = resolve_entry_id(Path("DET2005018/1 Evaluation/DET2005018 Notes.txt"), index)
+    assert result.unresolved
+
+
+def test_file_named_exactly_the_docket_id_still_matches():
+    # Stripping the docket id leaves nothing on the file side -- scoring must
+    # fall back to the unstripped strings rather than failing on empty input.
+    index = _index(
+        [IndexRow(path=CON_PATH, name="CON2005029", entry_id=1043, page_count=1)]
+    )
+    result = resolve_entry_id(Path("CON2005029/A Main Application/CON2005029"), index)
+    assert result.entry_id == 1043
