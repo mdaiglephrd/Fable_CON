@@ -24,6 +24,13 @@ Contracts:
   convention). con.trg_axis2_masterfile_guard and its Axis 3/4 counterparts
   (schema/migrations/0011) are the DB-side backstop for the same rule this
   module already checks in Python before ever reaching them.
+- DB-level conflicts become rejects, not crashes (same batch-buffered shape
+  as ingest/load_document_text.load_texts): each batch is existence-checked
+  against con.document (an unknown entry_id would otherwise fail the FK),
+  and a row setting axis2 = Masterfile is checked against the document's
+  EXISTING Axis 3/4 rows in the DB -- a Masterfile-transition conflict that
+  passes pure validation (the row itself carries no Axis 3/4) would
+  otherwise trip the 0011 trigger, whose ROLLBACK kills the whole batch.
 - Idempotent + resumable: commits every --batch-size rows; rerunning the
   same file converges to the same state.
 """
@@ -38,7 +45,9 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from common.axis_taxonomy import MASTERFILE
 from common.axis_validation import validate_tags
+from ingest.load_document_text import _existing_entry_ids
 from ingest.load_tags import RowError, RowRejected, write_rejects
 
 # --------------------------------------------------------------------------
@@ -174,19 +183,128 @@ def _write_shaped(cursor, shaped: ShapedTagRow) -> None:
         cursor.execute(AXIS4_INSERT_SQL, (shaped.entry_id, code, shaped.entry_id, code))
 
 
+# IN (...) chunk size for the per-batch DB-state checks (same convention as
+# ingest/load_document_text._EXISTS_CHUNK).
+_CHECK_CHUNK = 500
+
+
+def _entry_ids_where(cursor, sql_template: str, entry_ids: list[int]) -> set[int]:
+    """Run a chunked IN-list query; sql_template has one {placeholders} slot."""
+    found: set[int] = set()
+    for i in range(0, len(entry_ids), _CHECK_CHUNK):
+        chunk = entry_ids[i : i + _CHECK_CHUNK]
+        placeholders = ", ".join("?" for _ in chunk)
+        cursor.execute(sql_template.format(placeholders=placeholders), tuple(chunk))
+        found.update(int(r[0]) for r in cursor.fetchall())
+    return found
+
+
+def _masterfile_tagged_in_db(cursor, entry_ids: list[int]) -> set[int]:
+    """Which of entry_ids are currently tagged Masterfile on Axis 2."""
+    return _entry_ids_where(
+        cursor,
+        "SELECT entry_id FROM con.document_axis2"
+        " WHERE value = N'Masterfile' AND entry_id IN ({placeholders})",
+        entry_ids,
+    )
+
+
+def _axis34_tagged_in_db(cursor, entry_ids: list[int]) -> set[int]:
+    """Which of entry_ids currently carry any Axis 3/4 row."""
+    found = _entry_ids_where(
+        cursor,
+        "SELECT entry_id FROM con.document_axis3 WHERE entry_id IN ({placeholders})",
+        entry_ids,
+    )
+    found |= _entry_ids_where(
+        cursor,
+        "SELECT entry_id FROM con.document_axis4 WHERE entry_id IN ({placeholders})",
+        entry_ids,
+    )
+    return found
+
+
 def load_tag_rows(conn, rows: Iterable[dict], *, batch_size: int = 500) -> LoadStats:
     """Shape, validate, and upsert Axis 1-4 tag rows; commit every batch_size rows.
 
     conn is any pyodbc-shaped connection (tests inject tests.fakes
     FakeConnection). Rejected rows emit no SQL. Rerunning the same input
     converges: MERGE and insert-if-missing writes are idempotent.
+
+    Each batch is pre-checked against DB state so a row that passes pure
+    validation cannot crash the run at the DB layer: unknown entry_ids (FK
+    would fail) and Masterfile conflicts with EXISTING tags (the 0011
+    triggers would ROLLBACK the whole batch) both become rejects instead.
+    Rows are applied in input order; in-batch state is tracked so an earlier
+    row in the same batch can create (or clear) a conflict for a later one.
     """
     if batch_size < 1:
         raise ValueError("batch_size must be >= 1")
 
     stats = LoadStats()
     cursor = conn.cursor()
-    pending = 0
+    batch: list[tuple[int, ShapedTagRow]] = []  # (row_number, shaped)
+
+    def flush() -> None:
+        if not batch:
+            return
+        ids = sorted({s.entry_id for _, s in batch})
+        existing = _existing_entry_ids(cursor, ids)
+        masterfile_tagged = _masterfile_tagged_in_db(cursor, ids)
+        axis34_tagged = _axis34_tagged_in_db(cursor, ids)
+        wrote = False
+        for row_number, shaped in batch:
+            entry_id = shaped.entry_id
+            if entry_id not in existing:
+                stats.rejected.append(
+                    RowError(
+                        row_number,
+                        "entry_id",
+                        "entry_id not in con.document (load the documents first)",
+                        str(entry_id),
+                    )
+                )
+                continue
+            if shaped.axis2 == MASTERFILE and entry_id in axis34_tagged:
+                stats.rejected.append(
+                    RowError(
+                        row_number,
+                        "axis2",
+                        "document already carries Axis 3/4 tags in the database;"
+                        " clear them before tagging Masterfile",
+                        str(entry_id),
+                    )
+                )
+                continue
+            adds_axis34 = bool(shaped.axis3_codes or shaped.axis4_codes)
+            # A row that also re-tags Axis 2 away from Masterfile clears the
+            # conflict within itself (_write_shaped MERGEs axis2 first).
+            clears_masterfile = shaped.axis2 is not None and shaped.axis2 != MASTERFILE
+            if adds_axis34 and entry_id in masterfile_tagged and not clears_masterfile:
+                stats.rejected.append(
+                    RowError(
+                        row_number,
+                        "axis3",
+                        "document is tagged Masterfile on Axis 2 in the database;"
+                        " change Axis 2 before adding Axis 3/4 tags",
+                        str(entry_id),
+                    )
+                )
+                continue
+            _write_shaped(cursor, shaped)
+            stats.rows_upserted += 1
+            wrote = True
+            if shaped.axis2 == MASTERFILE:
+                masterfile_tagged.add(entry_id)
+            elif clears_masterfile:
+                masterfile_tagged.discard(entry_id)
+            if adds_axis34:
+                axis34_tagged.add(entry_id)
+        if wrote:
+            conn.commit()
+            stats.commits += 1
+        batch.clear()
+
     for row_number, row in enumerate(rows, start=1):
         stats.rows_read += 1
         try:
@@ -194,16 +312,10 @@ def load_tag_rows(conn, rows: Iterable[dict], *, batch_size: int = 500) -> LoadS
         except RowRejected as exc:
             stats.rejected.append(exc.error)
             continue
-        _write_shaped(cursor, shaped)
-        stats.rows_upserted += 1
-        pending += 1
-        if pending >= batch_size:
-            conn.commit()
-            stats.commits += 1
-            pending = 0
-    if pending:
-        conn.commit()
-        stats.commits += 1
+        batch.append((row_number, shaped))
+        if len(batch) >= batch_size:
+            flush()
+    flush()
     return stats
 
 
