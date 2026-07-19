@@ -10,11 +10,16 @@
 // plan supports Microsoft Entra ID authentication. This module intentionally
 // provisions only the hosting resource + identity.
 //
-// NOTE on identity: ARM accepts a system-assigned identity on the Free plan, but
-// *using* that identity for Key Vault references (keyVaultReferenceIdentity) needs
-// the Standard plan (per Microsoft docs). At Free tier the console just calls the
-// FastAPI backend over HTTPS, so the identity is declared for forward-compatibility
-// and is granted no data-plane RBAC (see main.bicep / roles*.bicep).
+// NOTE on identity: an earlier version of this module declared a system-assigned
+// identity here for forward-compatibility (it was granted no data-plane RBAC).
+// That combination -- sku Free + a declared identity block -- fails ARM
+// deployment-time validation with "SkuCode 'Free' is invalid", a known Bicep/ARM
+// quirk (see Azure/static-web-apps#384, #571) rather than a real product
+// restriction. Since nothing consumed the identity, it's removed here rather
+// than worked around. At Free tier the console just calls the FastAPI backend
+// over HTTPS, so no identity is needed today; add it back (Standard tier only,
+// per Microsoft docs, if it's ever needed for Key Vault references) if a real
+// consumer shows up.
 
 @description('Static Web App name (globally unique).')
 param staticWebAppName string
@@ -32,9 +37,6 @@ resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
   sku: {
     name: 'Free'
   }
-  identity: {
-    type: 'SystemAssigned'
-  }
   properties: {
     // Deployment source (repo/branch) is left unset: the console is published via
     // the SWA CLI / az staticwebapp / GitHub Actions post-deploy, not from Bicep.
@@ -49,6 +51,3 @@ output name string = staticWebApp.name
 
 @description('Default *.azurestaticapps.net hostname for the console (CONSOLE_ORIGIN host).')
 output defaultHostName string = staticWebApp.properties.defaultHostname
-
-@description('Principal ID of the Static Web App system-assigned identity.')
-output principalId string = staticWebApp.identity.principalId
