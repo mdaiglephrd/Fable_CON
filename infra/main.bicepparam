@@ -29,7 +29,7 @@ param deployOpenAI = false // enable in a region with gpt-4o-mini + text-embeddi
 // param logRetentionDays = 30
 
 // --- Research layer (v2): console + document-text extraction -----------------
-param deployStaticWebApp = false // Azure Static Web App (Free) for the React console (web/)
+param deployStaticWebApp = true // Azure Static Web App (Free) for the React console (web/)
 // SWA is region-limited; override if the RG region is unsupported (e.g. westus2, eastus2, centralus, westeurope, eastasia)
 param staticWebAppLocation = 'eastus2'
 param deployDocIntel = true // Azure AI Document Intelligence for the document-text step
