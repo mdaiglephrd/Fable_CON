@@ -29,10 +29,20 @@ _ORDERING_PREFIX_RE = re.compile(r"^(?:[\dA-Za-z](?:\.\d+)*)\s+")
 # not just the OCR step. Architectural/facility drawings, not legal filings.
 _EXCLUDED_SUBTREE_NAMES = frozenset({"state architect files"})
 
+# Only PDFs are processed or saved at all -- mp4/jpg/msg/doc/etc. never
+# become CandidateFiles, so they skip hashing, crosswalk, OCR, and get no
+# con.document row whatsoever. This is a stricter cut than the doc_type gate
+# in tag_process.py, which only skips the OCR step for non-qualifying types.
+_ALLOWED_EXTENSIONS = frozenset({".pdf"})
+
 
 def _is_excluded_subtree(dirname: str) -> bool:
     stripped = _ORDERING_PREFIX_RE.sub("", dirname).strip().lower()
     return stripped in _EXCLUDED_SUBTREE_NAMES
+
+
+def _is_allowed_extension(filename: str) -> bool:
+    return Path(filename).suffix.lower() in _ALLOWED_EXTENSIONS
 
 
 @dataclass(frozen=True)
@@ -57,6 +67,8 @@ def enumerate_candidate_files(root: Path):
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(d for d in dirnames if not _is_excluded_subtree(d))
         for filename in sorted(filenames):
+            if not _is_allowed_extension(filename):
+                continue
             file_path = Path(dirpath) / filename
             try:
                 info = os.stat(file_path)
