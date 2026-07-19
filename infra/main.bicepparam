@@ -36,4 +36,4 @@ param computeLocation = 'westus2' // App Service quota was denied in eastus2; tr
 param deployDocIntel = true // Azure AI Document Intelligence for the document-text step
 param docIntelSku = 'F0' // 'F0' free (500 pages/mo) | 'S0' standard (for the initial corpus backfill)
 param sqlUseFreeOffer = true // Azure SQL Database free offer (GP serverless free monthly limits)
-param appServicePlanSku = 'F1' // F1 = free pilot (60 CPU-min/day, no Always-On); default B1 (~$13/mo)
+param appServicePlanSku = 'B1' // upgraded from F1: the Free tier's resource limits couldn't complete the pyodbc build during zip deploy (Oryx build hung/died silently); B1 (~$13/mo) resolved it
