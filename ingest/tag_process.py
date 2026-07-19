@@ -22,7 +22,7 @@ from common.file_identity import (
     sniff_type,
 )
 from common.json_logging import configure_json_logging
-from ingest.tag_crosswalk import CrosswalkIndex, MatchCandidate, resolve_entry_id
+from ingest.tag_crosswalk import CrosswalkIndex, MatchCandidate, resolve_entry_id, should_attempt_ocr
 from ingest.tag_enumerate import CandidateFile
 from ingest.tag_ocr import (
     NativeTextEngine,
@@ -85,8 +85,12 @@ def process_one_file(
 
     # match.doc_type is set from the real on-disk folder position regardless
     # of whether the crosswalk itself resolved an entry_id -- so this gate is
-    # available even for files that end up Unresolved.
-    allow_ocr = match.doc_type in OCR_QUALIFYING_DOC_TYPES
+    # available even for files that end up Unresolved. should_attempt_ocr
+    # applies a finer filename-level rule within that already-qualifying set
+    # (see ingest.tag_crosswalk for why: Master File bundles, appendices,
+    # and litigation-support material in appeal-stage folders all share a
+    # doc_type with content that genuinely should be OCR'd).
+    allow_ocr = match.doc_type in OCR_QUALIFYING_DOC_TYPES and should_attempt_ocr(candidate.path.parts)
     ocr_status, ocr_result, error = _extract_text(candidate.path, engine, allow_ocr=allow_ocr)
 
     if match.unresolved and ocr_result is not None and ocr_result.page_count is not None:
