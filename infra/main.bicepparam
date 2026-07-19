@@ -32,6 +32,7 @@ param deployOpenAI = false // enable in a region with gpt-4o-mini + text-embeddi
 param deployStaticWebApp = true // Azure Static Web App (Free) for the React console (web/)
 // SWA is region-limited; override if the RG region is unsupported (e.g. westus2, eastus2, centralus, westeurope, eastasia)
 param staticWebAppLocation = 'eastus2'
+param computeLocation = 'westus2' // App Service quota was denied in eastus2; try a different region independently of the rest of the stack
 param deployDocIntel = true // Azure AI Document Intelligence for the document-text step
 param docIntelSku = 'F0' // 'F0' free (500 pages/mo) | 'S0' standard (for the initial corpus backfill)
 param sqlUseFreeOffer = true // Azure SQL Database free offer (GP serverless free monthly limits)
