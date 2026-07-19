@@ -83,7 +83,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: 'PYTHON|3.11'
-      appCommandLine: 'gunicorn -k uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000 api.main:app'
+      appCommandLine: 'python3 -m gunicorn -k uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000 api.main:app'
       alwaysOn: planSku != 'F1' // Always On is not supported on the Free tier
       minTlsVersion: '1.2'
       ftpsState: 'FtpsOnly'
