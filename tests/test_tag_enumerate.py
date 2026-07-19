@@ -39,6 +39,26 @@ def test_empty_directory_yields_nothing(tmp_path):
     assert list(enumerate_candidate_files(tmp_path)) == []
 
 
+def test_excludes_state_architect_files_subtree(tmp_path):
+    docket = tmp_path / "CON2005029"
+    (docket / "8 State Architect Files" / "nested").mkdir(parents=True)
+    (docket / "8 State Architect Files" / "site_plan.pdf").write_bytes(b"x")
+    (docket / "8 State Architect Files" / "nested" / "inspection.pdf").write_bytes(b"y")
+    (docket / "1 Master File").mkdir()
+    (docket / "1 Master File" / "kept.pdf").write_bytes(b"z")
+
+    found = {c.path.name for c in enumerate_candidate_files(tmp_path)}
+    assert found == {"kept.pdf"}
+
+
+def test_excludes_state_architect_files_case_and_prefix_insensitive(tmp_path):
+    docket = tmp_path / "CON2005029"
+    (docket / "state architect files").mkdir(parents=True)
+    (docket / "state architect files" / "drawing.pdf").write_bytes(b"x")
+
+    assert list(enumerate_candidate_files(tmp_path)) == []
+
+
 def test_continues_past_unreadable_entry(tmp_path, monkeypatch):
     good = tmp_path / "good.pdf"
     bad = tmp_path / "bad.pdf"

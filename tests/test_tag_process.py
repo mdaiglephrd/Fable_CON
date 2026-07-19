@@ -5,7 +5,12 @@ from reportlab.pdfgen import canvas
 from ingest.tag_crosswalk import CrosswalkIndex, IndexRow
 from ingest.tag_enumerate import CandidateFile
 from ingest.tag_ocr import OcrResult
-from ingest.tag_process import OCR_STATUS_FAILED, OCR_STATUS_SUCCEEDED, process_one_file
+from ingest.tag_process import (
+    OCR_STATUS_FAILED,
+    OCR_STATUS_SKIPPED,
+    OCR_STATUS_SUCCEEDED,
+    process_one_file,
+)
 
 CON_PATH = (
     r"Regulatory Compliance\2005 Forward\1 Certificate of Need\2005"
@@ -97,7 +102,10 @@ def test_unresolved_when_no_docket_in_path(tmp_path):
 
 
 def test_ocr_failure_is_captured_not_raised(tmp_path):
-    image_path = tmp_path / "CON2005029" / "broken.jpg"
+    # Under a qualifying folder ("Appendices" -> Application/Request) so this
+    # exercises the engine actually being invoked and failing, not the
+    # doc_type OCR-scope gate (see test_ocr_skipped_for_non_qualifying_doc_type).
+    image_path = tmp_path / "CON2005029" / "B Appendices" / "broken.jpg"
     image_path.parent.mkdir(parents=True)
     _make_fake_jpeg(image_path)
 
@@ -109,6 +117,24 @@ def test_ocr_failure_is_captured_not_raised(tmp_path):
     assert doc.ocr_status == OCR_STATUS_FAILED
     assert doc.ocr_result is None
     assert "model exploded" in doc.error
+
+
+def test_ocr_skipped_for_non_qualifying_doc_type(tmp_path):
+    # A folder position that isn't in _FOLDER_DOC_TYPE_PHASE at all (doc_type
+    # resolves to None) must skip the expensive engine call rather than
+    # attempt it -- OCR is scoped to precedential docs + Applications only.
+    image_path = tmp_path / "CON2005029" / "broken.jpg"
+    image_path.parent.mkdir(parents=True)
+    _make_fake_jpeg(image_path)
+
+    index = CrosswalkIndex([])
+    fake_engine = _FakeEngine(exc=RuntimeError("should never be called"))
+
+    doc = process_one_file(_candidate(image_path), fake_engine, index)
+
+    assert doc.ocr_status == OCR_STATUS_SKIPPED
+    assert doc.ocr_result is None
+    assert fake_engine.calls == []  # the gate must prevent the engine from being invoked at all
 
 
 def test_page_count_retry_resolves_ambiguous_match(tmp_path):

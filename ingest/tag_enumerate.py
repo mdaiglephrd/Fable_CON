@@ -12,6 +12,7 @@ entry in a 150,000-document tree must never stop the run.
 from __future__ import annotations
 
 import os
+import re
 import stat as stat_module
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +20,19 @@ from pathlib import Path
 from common.json_logging import configure_json_logging
 
 log = configure_json_logging(__name__)
+
+_ORDERING_PREFIX_RE = re.compile(r"^(?:[\dA-Za-z](?:\.\d+)*)\s+")
+
+# Folder names (leading ordering prefix stripped, e.g. "8 ", case-insensitive)
+# whose entire subtree is out of scope: these files never become
+# CandidateFiles at all, so they skip hashing, crosswalk, and OCR entirely --
+# not just the OCR step. Architectural/facility drawings, not legal filings.
+_EXCLUDED_SUBTREE_NAMES = frozenset({"state architect files"})
+
+
+def _is_excluded_subtree(dirname: str) -> bool:
+    stripped = _ORDERING_PREFIX_RE.sub("", dirname).strip().lower()
+    return stripped in _EXCLUDED_SUBTREE_NAMES
 
 
 @dataclass(frozen=True)
@@ -41,7 +55,7 @@ def enumerate_candidate_files(root: Path):
     """
     root = Path(root)
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames.sort()
+        dirnames[:] = sorted(d for d in dirnames if not _is_excluded_subtree(d))
         for filename in sorted(filenames):
             file_path = Path(dirpath) / filename
             try:
