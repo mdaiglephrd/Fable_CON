@@ -90,6 +90,9 @@ param deployStaticWebApp bool = true
 @description('Region for the Static Web App. Static Web Apps are offered in a limited set of regions (e.g. westus2, centralus, eastus2, westeurope, eastasia); override if the resource group region is unsupported. Defaults to the deployment location.')
 param staticWebAppLocation string = location
 
+@description('Region for the Function App + App Service (their serverFarms/Microsoft.Web compute). App Service quota is tracked independently per region and per subscription; if the default location has no available quota, override this to try a different region without moving the rest of the stack (SQL, Storage, Key Vault, etc.) out of their existing region. Defaults to the deployment location.')
+param computeLocation string = location
+
 @description('Deploy an Azure AI Document Intelligence account for the document-text extraction step.')
 param deployDocIntel bool = true
 
@@ -231,7 +234,7 @@ module functions 'modules/functions.bicep' = {
   params: {
     planName: '${baseName}-func-plan'
     functionAppName: '${baseName}-func'
-    location: location
+    location: computeLocation
     tags: tags
     storageAccountName: storage.outputs.storageAccountName
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
@@ -249,7 +252,7 @@ module appService 'modules/appservice.bicep' = {
   params: {
     planName: '${baseName}-api-plan'
     webAppName: '${baseName}-api'
-    location: location
+    location: computeLocation
     tags: tags
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     sqlServerFqdn: sql.outputs.serverFqdn
