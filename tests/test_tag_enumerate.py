@@ -67,10 +67,14 @@ def test_only_pdfs_are_enumerated(tmp_path):
     (docket / "notes.docx").write_bytes(b"z")
     (docket / "scan.jpg").write_bytes(b"w")
     (docket / "email.msg").write_bytes(b"v")
-    (docket / "KEPT.PDF").write_bytes(b"u")  # case-insensitive
+    # Different base name (not the same name in a different case) -- on
+    # case-insensitive filesystems (Windows/NTFS), "kept.pdf" and "KEPT.PDF"
+    # are the same file, so writing both would silently overwrite one with
+    # the other rather than testing anything.
+    (docket / "OTHER.PDF").write_bytes(b"u")  # case-insensitive extension match
 
     found = {c.path.name for c in enumerate_candidate_files(tmp_path)}
-    assert found == {"kept.pdf", "KEPT.PDF"}
+    assert found == {"kept.pdf", "OTHER.PDF"}
 
 
 def test_continues_past_unreadable_entry(tmp_path, monkeypatch):
