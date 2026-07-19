@@ -169,6 +169,67 @@ def infer_doc_type_phase(path_parts: Sequence[str]) -> tuple[str | None, str | N
     return _FOLDER_DOC_TYPE_PHASE.get(candidate, (None, None))
 
 
+# --- filename-level OCR refinement --------------------------------------------
+#
+# infer_doc_type_phase's folder-position gate is necessarily broad -- a whole
+# folder gets one doc_type. For several folders that's too broad for OCR
+# purposes specifically: "A Main Application" also picks up combined
+# Master File/Bates-numbered bundles that happen to sit in that same folder
+# position, "B Appendices" is part of the application but explicitly not
+# wanted for OCR, and the appeal-stage folders (Hearing Officer/Commissioner/
+# Judicial Review/Review Board) are mostly litigation support material
+# (discovery, briefs, exhibits, depositions) with the actual order/decision
+# buried among a few hundred other files.
+#
+# This does NOT relabel doc_type -- an appendix file is still tagged
+# Application/Request for search/browse purposes, it just doesn't get the
+# expensive OCR call. tag_process.OCR_QUALIFYING_DOC_TYPES remains the first
+# gate; this is a second, finer one applied only within that already-
+# qualifying set.
+
+_DECISION_KEYWORDS_RE = re.compile(
+    r"(order|decision|findings of fact|opinion|final order|certificate)", re.IGNORECASE
+)
+_EXCLUDE_MARKER_RE = re.compile(r"(duplicate|proposed|draft)", re.IGNORECASE)
+
+_APPEAL_STAGE_FOLDERS = frozenset(
+    {
+        "initial hearing officer appeal",
+        "apa appeal",
+        "commissioner review",
+        "judicial review",
+        "review board",
+    }
+)
+
+
+def should_attempt_ocr(path_parts: Sequence[str]) -> bool:
+    """Filename-level refinement on top of the doc_type gate, for folders
+    where folder position alone over- or under-includes relative to what's
+    actually wanted for OCR. Returns True (no additional restriction) for any
+    folder not explicitly listed here -- this only narrows within folders
+    known to need it, it never widens beyond infer_doc_type_phase's gate.
+    """
+    if len(path_parts) < 2:
+        return True
+    folder = _strip_ordering_prefix(path_parts[-2]).lower()
+    fname = path_parts[-1].lower()
+
+    if folder == "main application":
+        return "main application" in fname and "master file" not in fname and "bates" not in fname
+    if folder == "appendices":
+        return False
+    if folder == "decision":
+        return ("decision" in fname or "letter" in fname) and "certificate" not in fname
+    if folder == "evaluation":
+        return "request" in fname or "response" in fname or "additional info" in fname
+    if folder in _APPEAL_STAGE_FOLDERS:
+        if _EXCLUDE_MARKER_RE.search(fname):
+            return False
+        return bool(_DECISION_KEYWORDS_RE.search(fname))
+    return True
+
+
 # --- fuzzy resolution ----------------------------------------------------------
 
 MATCH_THRESHOLD = 0.55

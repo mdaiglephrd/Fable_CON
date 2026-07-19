@@ -59,6 +59,20 @@ def test_excludes_state_architect_files_case_and_prefix_insensitive(tmp_path):
     assert list(enumerate_candidate_files(tmp_path)) == []
 
 
+def test_only_pdfs_are_enumerated(tmp_path):
+    docket = tmp_path / "CON2020003" / "1 Initial Hearing Officer Appeal"
+    docket.mkdir(parents=True)
+    (docket / "kept.pdf").write_bytes(b"x")
+    (docket / "deposition.mp4").write_bytes(b"y")
+    (docket / "notes.docx").write_bytes(b"z")
+    (docket / "scan.jpg").write_bytes(b"w")
+    (docket / "email.msg").write_bytes(b"v")
+    (docket / "KEPT.PDF").write_bytes(b"u")  # case-insensitive
+
+    found = {c.path.name for c in enumerate_candidate_files(tmp_path)}
+    assert found == {"kept.pdf", "KEPT.PDF"}
+
+
 def test_continues_past_unreadable_entry(tmp_path, monkeypatch):
     good = tmp_path / "good.pdf"
     bad = tmp_path / "bad.pdf"

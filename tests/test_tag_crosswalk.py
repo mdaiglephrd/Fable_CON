@@ -9,6 +9,7 @@ from ingest.tag_crosswalk import (
     infer_doc_type_phase,
     load_index,
     resolve_entry_id,
+    should_attempt_ocr,
 )
 
 CON_PATH = (
@@ -95,6 +96,57 @@ def test_infer_doc_type_phase_unknown_folder_returns_none():
 
 def test_infer_doc_type_phase_too_short_path():
     assert infer_doc_type_phase(("file",)) == (None, None)
+
+
+# --- should_attempt_ocr -----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "parts,expected",
+    [
+        # Main Application: name must say so, Master File/Bates bundles excluded
+        (("...", "A Main Application", "CON2020003 Main Application.pdf"), True),
+        (("...", "A Main Application", "CON2020003 Master File Bates Numbered.pdf"), False),
+        (("...", "A Main Application", "CON2020020 Bates Numbered Master File.pdf"), False),
+        (("...", "A Main Application", "LOI2020015 University Hospital.pdf"), False),
+        # Appendices: never OCR'd, regardless of filename
+        (("...", "B Appendices", "CON2005029 Appendix A.pdf"), False),
+        (("...", "B Appendices", "CON2005029 Main Application.pdf"), False),
+        # Additional Info & Amendment: whole folder, no filter
+        (("...", "D Additional Info & Amendment", "CON2020005 Additional Info.pdf"), True),
+        (("...", "D Additional Info & Amendment", "CON2020005 Amendment Request.pdf"), True),
+        # CON Decision: Decision or Letter, never Certificate
+        (("...", "J Decision", "CON2008123 Decision.pdf"), True),
+        (("...", "J Decision", "CON2008123 Certificate.pdf"), False),
+        (("...", "J Decision", "CON2021054 Denial Letter.pdf"), True),
+        (("...", "J Decision", "CON2021023 Letter.pdf"), True),
+        # DET/LNR Evaluation: Request, Response, or Additional Info
+        (("...", "1 Evaluation", "DET2006042 Determ Request.pdf"), True),
+        (("...", "1 Evaluation", "DET2018003 Determ Response.pdf"), True),
+        (("...", "1 Evaluation", "DET2026008 Determ Additional Info.pdf"), True),
+        (("...", "1 Evaluation", "DET2022047 Extension.pdf"), False),
+        (("...", "1 Evaluation", "DET2022047 Withdrawal.pdf"), False),
+        (("...", "1 Evaluation", "DET2022047 Filing Fee.pdf"), False),
+        # Appeal-stage folders: decision keywords, excluding duplicate/proposed/draft
+        (("...", "1 Initial Hearing Officer Appeal", "CON2020003 Findings of Fact, Conclusions of Law and Order -Final.pdf"), True),
+        (("...", "1 Initial Hearing Officer Appeal", "CON2022008 Proposed Findings of Fact and Conclusion of Law.pdf"), False),
+        (("...", "1 Initial Hearing Officer Appeal", "CON2020003 DUPLICATE - Findings of Fact, Conclusions of Law and Order - Final.pdf"), False),
+        (("...", "1 Initial Hearing Officer Appeal", "CON2020003 Coliseum Medical Center Depo SDaugherty Video 111920.pdf"), False),
+        (("...", "2 Commissioner Review", "CON2020003 Commissioner Review Coliseum Med Ctr LLC dba Coliseum Med Ctrs Final Order.pdf"), True),
+        (("...", "2 Commissioner Review", "CON2018010 Commissioner Review Request - Hamilton Medical.pdf"), False),
+        (("...", "3 Judicial Review", "CON2020003 Order Granting Petition For Judicial Review.pdf"), True),
+        (("...", "3 Judicial Review", "CON2020003 Houston Reply Brief in Support of Petition for Judicial Review.pdf"), False),
+        (("...", "2 Judicial Review", "DET2016208 Superior Ct - Order and Judgment Granting Petition For Judicial Review.pdf"), True),
+        (("...", "1 APA Appeal", "CON2020003 [Proposed] Findings of Fact, Conclusions of Law, and Order.pdf"), False),
+        (("...", "Review Board", "CON2007003 June 9, 2008 Review Board Objections to Hearing Off Decision.pdf"), True),
+        # Folders not subject to any filename refinement: no additional restriction
+        (("...", "G Letters of Opposition", "CON2005029 Letter of Opposition.pdf"), True),
+        # Too-short path: no restriction (defers entirely to the doc_type gate)
+        (("file.pdf",), True),
+    ],
+)
+def test_should_attempt_ocr(parts, expected):
+    assert should_attempt_ocr(parts) is expected
 
 
 # --- resolve_entry_id ------------------------------------------------------------

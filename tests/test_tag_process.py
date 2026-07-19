@@ -102,10 +102,12 @@ def test_unresolved_when_no_docket_in_path(tmp_path):
 
 
 def test_ocr_failure_is_captured_not_raised(tmp_path):
-    # Under a qualifying folder ("Appendices" -> Application/Request) so this
-    # exercises the engine actually being invoked and failing, not the
-    # doc_type OCR-scope gate (see test_ocr_skipped_for_non_qualifying_doc_type).
-    image_path = tmp_path / "CON2005029" / "B Appendices" / "broken.jpg"
+    # Under a qualifying folder+filename ("Main Application" -> allowed by
+    # both the doc_type gate and should_attempt_ocr) so this exercises the
+    # engine actually being invoked and failing, not either OCR-scope gate.
+    # ("B Appendices" no longer works here -- appendices never get OCR'd now,
+    # see test_appendices_never_get_ocr_regardless_of_filename.)
+    image_path = tmp_path / "CON2005029" / "A Main Application" / "CON2005029 Main Application.jpg"
     image_path.parent.mkdir(parents=True)
     _make_fake_jpeg(image_path)
 
@@ -138,26 +140,31 @@ def test_ocr_skipped_for_non_qualifying_doc_type(tmp_path):
 
 
 def test_page_count_retry_resolves_ambiguous_match(tmp_path):
-    a_dir = tmp_path / "CON2005029" / "B Appendices"
+    # Moved off "B Appendices" -- that folder never gets OCR'd now (see
+    # should_attempt_ocr), so the page-count retry this test exercises would
+    # never fire there. "D Additional Info & Amendment" still allows OCR
+    # unconditionally, keeping this test focused on the crosswalk retry
+    # mechanism rather than entangling it with the filename gate.
+    a_dir = tmp_path / "CON2005029" / "D Additional Info & Amendment"
     a_dir.mkdir(parents=True)
-    file_path = a_dir / "CON2005029 Appendix.jpg"
+    file_path = a_dir / "CON2005029 Additional Info.jpg"
     _make_fake_jpeg(file_path)
 
     index = CrosswalkIndex(
         [
             IndexRow(
-                path=CON_PATH.replace("A Main Application", "B Appendices").replace(
-                    "CON2005029 Main Application", "CON2005029 Appendix A"
+                path=CON_PATH.replace("A Main Application", "D Additional Info & Amendment").replace(
+                    "CON2005029 Main Application", "CON2005029 Additional Info 1"
                 ),
-                name="CON2005029 Appendix A",
+                name="CON2005029 Additional Info 1",
                 entry_id=1044,
                 page_count=3,
             ),
             IndexRow(
-                path=CON_PATH.replace("A Main Application", "B Appendices").replace(
-                    "CON2005029 Main Application", "CON2005029 Appendix B"
+                path=CON_PATH.replace("A Main Application", "D Additional Info & Amendment").replace(
+                    "CON2005029 Main Application", "CON2005029 Additional Info 2"
                 ),
-                name="CON2005029 Appendix B",
+                name="CON2005029 Additional Info 2",
                 entry_id=1045,
                 page_count=83,
             ),

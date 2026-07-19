@@ -154,7 +154,7 @@ def test_workers_parallel_run_loads_native_pdfs(tmp_path):
     import openpyxl
 
     for i in range(3):
-        pdf = tmp_path / "ssd" / f"CON200500{i}" / "A Main Application" / f"CON200500{i} Main Application"
+        pdf = tmp_path / "ssd" / f"CON200500{i}" / "A Main Application" / f"CON200500{i} Main Application.pdf"
         _make_native_pdf(pdf, f"Application text {i} long enough to count as real page content.")
 
     index_path = tmp_path / "index.xlsx"
