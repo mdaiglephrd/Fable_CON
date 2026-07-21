@@ -50,24 +50,36 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        for path in \
-          ./functions/function_app.py \
-          ./functions/processing.py \
-          ./functions/host.json \
-          ./functions/requirements.txt \
-          ./common \
+        build_dir=./functions/.build
+        required_files=(
+          ./functions/function_app.py
+          ./functions/processing.py
+          ./functions/host.json
+          ./functions/requirements.txt
+        )
+        shared_modules=(
+          ./common
           ./ingest
-        do
-          test -e "$path" || { echo "Missing required deployment path: $path" >&2; exit 1; }
+        )
+        for path in "${required_files[@]}" "${shared_modules[@]}"; do
+          test -e "$path" || {
+            echo "Required deployment path not found: $path" >&2
+            exit 1
+          }
         done
-        rm -rf ./functions/.build
-        mkdir -p ./functions/.build
+        # Rebuild the staged deployment bundle from scratch on every run.
+        test "$build_dir" = ./functions/.build || {
+          echo "Unexpected build directory: $build_dir" >&2
+          exit 1
+        }
+        rm -rf -- "$build_dir"
+        mkdir -p "$build_dir"
         cp ./functions/function_app.py \
            ./functions/processing.py \
            ./functions/host.json \
            ./functions/requirements.txt \
-           ./functions/.build/
-        cp -R ./common ./ingest ./functions/.build/
+           "$build_dir"/
+        cp -R "${shared_modules[@]}" "$build_dir"/
 
     - name: 'Resolve Project Dependencies Using Pip'
       shell: bash
