@@ -24,8 +24,8 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_NAME: 'gacon-dev-func'   # set this to your function app name on Azure
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.functions/function_app.py'       # set this to the path to your function app project, defaults to the repository root
-  PYTHON_VERSION: '3.9'                     # set this to the python version to use (e.g. '3.6', '3.7', '3.8')
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions/.build' # staged function app package (includes shared repo-root modules)
+  PYTHON_VERSION: '3.11'                    # set this to the python version to use
 
 jobs:
   build-and-deploy:
@@ -45,6 +45,18 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 'Stage Azure Functions package'
+      shell: bash
+      run: |
+        rm -rf ./functions/.build
+        mkdir -p ./functions/.build
+        cp ./functions/function_app.py \
+           ./functions/processing.py \
+           ./functions/host.json \
+           ./functions/requirements.txt \
+           ./functions/.build/
+        cp -R ./common ./ingest ./functions/.build/
 
     - name: 'Resolve Project Dependencies Using Pip'
       shell: bash
