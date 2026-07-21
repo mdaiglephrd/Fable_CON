@@ -49,6 +49,17 @@ jobs:
     - name: 'Stage Azure Functions package'
       shell: bash
       run: |
+        set -euo pipefail
+        for path in \
+          ./functions/function_app.py \
+          ./functions/processing.py \
+          ./functions/host.json \
+          ./functions/requirements.txt \
+          ./common \
+          ./ingest
+        do
+          test -e "$path" || { echo "Missing required deployment path: $path" >&2; exit 1; }
+        done
         rm -rf ./functions/.build
         mkdir -p ./functions/.build
         cp ./functions/function_app.py \
