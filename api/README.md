@@ -67,6 +67,7 @@ setting when unconfigured.
 | GET | `/wiki/{article_id}` | One article: TOC + body + revision history | `curl localhost:8000/wiki/<article-id>` |
 | POST | `/wiki/{article_id}/revisions` | Submit a **pending** revision `{author, diff}` | `curl -X POST localhost:8000/wiki/<id>/revisions -H 'content-type: application/json' -d '{"author":"you@tenant.com","diff":{"body":"..."}}'` |
 | POST | `/wiki/{article_id}/revisions/{revision_id}/review` | Review a pending revision: `{action: "approve"\|"reject"}` | `curl -X POST localhost:8000/wiki/<id>/revisions/7/review -H 'content-type: application/json' -d '{"action":"approve"}'` |
+| GET | `/me` | The platform-authenticated caller's profile; upserts `con.app_user` (identity + `last_seen_at`) on every hit. **401** when no identity header is present | `curl localhost:8000/me -H 'x-ms-client-principal: <base64>'` |
 
 **camelCase convention**: research-endpoint JSON uses **camelCase keys**
 (`docketId`, `citingCases`, `dueDate`, …) — the SPA contract from the design
@@ -108,9 +109,31 @@ when `--skip-vectors` is passed or Azure OpenAI is unconfigured.
 
 ## Auth
 
-No auth in code. Deploy behind platform-level auth — App Service **Easy Auth**
-with Entra ID (see DESIGN.md). All endpoints assume the platform has already
-authenticated the caller.
+Deploy behind platform-level auth — the Static Web App's built-in **Entra ID
+(AAD)** auth, or App Service **Easy Auth** with Entra ID (see DESIGN.md). All
+endpoints assume the platform has already authenticated the caller; the API
+never validates a token itself.
+
+The platform forwards the authenticated identity via the base64-encoded JSON
+`x-ms-client-principal` header (`{"identityProvider", "userId", "userDetails",
+"userRoles", "claims"}`; `claims` may be absent). Plain App Service Easy Auth
+headers (`x-ms-client-principal-name` / `x-ms-client-principal-id`) are used
+as a fallback when that header is absent. `api/auth.py` parses these into a
+`CurrentUser` (id, upn, email, name, provider, roles); the Entra object id
+(`oid` claim) is preferred as the stable id, since UPN/email can change.
+
+- **`GET /me`** requires an identity header (401 otherwise) and upserts
+  `con.app_user` keyed on that stable id, returning
+  `{"id", "upn", "email", "name", "provider", "roles"}`.
+- **Ownership is server-authoritative** on `POST /watchlist`, `POST
+  /projects`, and `POST /alerts`: when an identity header is present, it sets
+  `created_by` / `owner` (upn, else email, else id) and any client-supplied
+  owner value in the request body is ignored. When no identity header is
+  present (local dev, or the API called directly without the platform in
+  front of it), the client-supplied value from the request body is kept —
+  unauthenticated local development is unaffected.
+- Local dev and the test suite send neither header, so `parse_client_principal`
+  returns `None` and every endpoint except `/me` behaves exactly as before.
 
 ## Note for E7 / Microsoft 365 users
 

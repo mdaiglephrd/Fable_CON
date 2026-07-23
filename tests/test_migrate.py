@@ -355,3 +355,13 @@ def test_0008_seeds_topic_taxonomy_roots_and_leaves():
         assert f"N'{topic_id}'" in sql, f"0008 missing leaf topic {topic_id}"
     for key_number in ("CON I", "CON VII", "CON VI · 24"):
         assert key_number in sql, f"0008 missing key_number {key_number}"
+
+
+# ---------------------------------------------------- 0013 (con.app_user)
+
+
+def test_0013_creates_app_user_with_filtered_unique_upn_index():
+    sql = (MIGRATIONS_DIR / "0013_app_user.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE con.app_user (" in sql
+    assert "CONSTRAINT PK_app_user PRIMARY KEY (user_id)" in sql
+    assert "CREATE UNIQUE INDEX UQ_app_user_upn ON con.app_user (upn) WHERE upn IS NOT NULL" in sql

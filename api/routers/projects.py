@@ -3,6 +3,10 @@
 Project ids are a slug of the name plus a short random suffix (api.deps
 slug_id). Item creation requires at least one target (entryId or docketId);
 docket ids are normalized to canonical form like the watchlist does.
+
+Ownership is server-authoritative: when the platform identity (api.auth) is
+present on a create call, it overrides any client-supplied owner; the
+client-supplied value is only honored when unauthenticated (local dev).
 """
 
 import json
@@ -11,6 +15,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
+from api.auth import CurrentUser, get_current_user
 from api.deps import drop_none, get_db, parse_json_field, query, scalar, slug_id
 from common.docket import normalize_docket
 
@@ -63,7 +68,12 @@ class ProjectCreate(BaseModel):
 
 
 @router.post("/projects", status_code=201)
-def create_project(project: ProjectCreate, conn: Any = Depends(get_db)) -> dict[str, Any]:
+def create_project(
+    project: ProjectCreate,
+    conn: Any = Depends(get_db),
+    user: CurrentUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    owner = (user.upn or user.email or user.id) if user is not None else project.owner
     project_id = slug_id(project.name)
     cursor = conn.cursor()
     cursor.execute(
@@ -72,7 +82,7 @@ def create_project(project: ProjectCreate, conn: Any = Depends(get_db)) -> dict[
         "VALUES (?, ?, ?, ?, ?, ?)",
         [
             project_id,
-            project.owner,
+            owner,
             project.name,
             project.description,
             json.dumps(project.tags) if project.tags is not None else None,
@@ -83,7 +93,7 @@ def create_project(project: ProjectCreate, conn: Any = Depends(get_db)) -> dict[
     return drop_none(
         {
             "id": project_id,
-            "owner": project.owner,
+            "owner": owner,
             "name": project.name,
             "description": project.description,
             "tags": project.tags,

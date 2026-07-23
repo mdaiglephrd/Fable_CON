@@ -2,7 +2,12 @@
 
 Read-mostly HTTP layer over the `con` schema (see DESIGN.md). All SQL is
 parameterized; column names come only from fixed whitelist maps, never from
-user input. Auth is platform-level (App Service Easy Auth / Entra) — none here.
+user input. Auth is platform-level (App Service Easy Auth / Entra) -- the SWA
+forwards the authenticated caller via the x-ms-client-principal header, which
+api/auth.py parses. That identity is optional everywhere except GET /me: when
+present it is server-authoritative for ownership fields (watchlist
+created_by, project/alert owner_upn) and any client-supplied value is
+ignored; when absent (local dev, tests) the client-supplied value is kept.
 """
 
 import os
@@ -14,6 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, model_validator
 
 from api import semantic
+from api.auth import CurrentUser, get_current_user
 from api.deps import (
     get_db,
     parse_json_field as _parse_json_field,
@@ -32,6 +38,7 @@ from api.routers import (
     stats,
     statutes,
     topics,
+    users,
     wiki,
 )
 from api.search_client import ConfigurationError
@@ -728,17 +735,25 @@ def list_watchlist(all: bool = False, conn: Any = Depends(get_db)) -> dict[str, 
 
 
 @app.post("/watchlist", status_code=201)
-def create_watchlist(entry: WatchlistCreate, conn: Any = Depends(get_db)) -> dict[str, Any]:
+def create_watchlist(
+    entry: WatchlistCreate,
+    conn: Any = Depends(get_db),
+    user: CurrentUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
     docket_id = entry.docket_id
     if docket_id:
         match = normalize_docket(docket_id)
         if match:
             docket_id = match.canonical
+    # An authenticated caller is server-authoritative for created_by; a
+    # client-supplied value is only honored when there is no platform
+    # identity to stamp instead (local dev).
+    created_by = (user.upn or user.email or user.id) if user is not None else entry.created_by
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO con.watchlist (docket_id, entry_id, path_prefix, reason, created_by) "
         "OUTPUT INSERTED.watch_id VALUES (?, ?, ?, ?, ?)",
-        [docket_id, entry.entry_id, entry.path_prefix, entry.reason, entry.created_by],
+        [docket_id, entry.entry_id, entry.path_prefix, entry.reason, created_by],
     )
     row = cursor.fetchone()
     conn.commit()
@@ -748,7 +763,7 @@ def create_watchlist(entry: WatchlistCreate, conn: Any = Depends(get_db)) -> dic
         "entry_id": entry.entry_id,
         "path_prefix": entry.path_prefix,
         "reason": entry.reason,
-        "created_by": entry.created_by,
+        "created_by": created_by,
         "active": True,
     }
 
@@ -823,6 +838,7 @@ for _research_router in (
     projects.router,
     alerts.router,
     wiki.router,
+    users.router,
 ):
     app.include_router(_research_router)
 
