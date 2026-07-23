@@ -2,6 +2,10 @@
 
 Alert rows are never hard-deleted — DELETE flips ``active`` to 0, matching
 the watchlist convention in api.main.
+
+Ownership is server-authoritative: when the platform identity (api.auth) is
+present on create, it overrides any client-supplied owner; the client value
+is only honored when unauthenticated (local dev).
 """
 
 import json
@@ -10,6 +14,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from api.auth import CurrentUser, get_current_user
 from api.deps import drop_none, get_db, parse_json_field, query, slug_id
 
 router = APIRouter()
@@ -61,21 +66,26 @@ class AlertCreate(BaseModel):
 
 
 @router.post("/alerts", status_code=201)
-def create_alert(alert: AlertCreate, conn: Any = Depends(get_db)) -> dict[str, Any]:
+def create_alert(
+    alert: AlertCreate,
+    conn: Any = Depends(get_db),
+    user: CurrentUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    owner = (user.upn or user.email or user.id) if user is not None else alert.owner
     alert_id = slug_id(alert.name)
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO con.saved_alert "
         "(alert_id, owner_upn, name, query_json, scope, frequency, active) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [alert_id, alert.owner, alert.name, json.dumps(alert.query), alert.scope,
+        [alert_id, owner, alert.name, json.dumps(alert.query), alert.scope,
          alert.frequency, 1],
     )
     conn.commit()
     return drop_none(
         {
             "id": alert_id,
-            "owner": alert.owner,
+            "owner": owner,
             "name": alert.name,
             "query": alert.query,
             "scope": alert.scope,

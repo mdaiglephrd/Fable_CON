@@ -15,6 +15,7 @@ import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-r
 
 import { SCOPE_DEFS } from '../lib/fixtures';
 import { useTheme } from '../lib/theme';
+import { useUser } from '../lib/useUser';
 import { useToast } from './Toast';
 
 // ---------------------------------------------------------------------------
@@ -228,6 +229,10 @@ export function Shell() {
   const [searchParams] = useSearchParams();
   const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
+  const { user, loading: userLoading } = useUser();
+  const userName = user?.name ?? (userLoading ? '…' : 'Signed out');
+  const userSubtitle = userLoading ? '' : (user?.email ?? '');
+  const userInitials = userLoading ? '' : (user?.initials ?? '');
 
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState('all');
@@ -372,11 +377,11 @@ export function Shell() {
                   flexShrink: 0,
                 }}
               >
-                JA
+                {userInitials}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, textAlign: 'left' }}>
-                <span style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>J. Anderson</span>
-                <span style={{ fontSize: 10, color: 'var(--text3)' }}>PHRD · Healthcare</span>
+                <span style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>{userName}</span>
+                <span style={{ fontSize: 10, color: 'var(--text3)' }}>{userSubtitle}</span>
               </div>
               <svg
                 width="10"
@@ -397,8 +402,8 @@ export function Shell() {
                 <button className="menu-overlay" tabIndex={-1} onClick={() => setUserMenuOpen(false)} aria-label="Close menu" />
                 <div className="user-menu">
                   <div style={{ padding: '9px 10px 10px', marginBottom: 4, borderBottom: '1px solid var(--surface2)' }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>J. Anderson</div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>PHRD · Healthcare</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>{userName}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{userSubtitle}</div>
                   </div>
                   <button
                     className="user-menu-item"
@@ -429,7 +434,7 @@ export function Shell() {
                     className="user-menu-item danger"
                     onClick={() => {
                       setUserMenuOpen(false);
-                      showToast('You have been logged out');
+                      window.location.href = '/.auth/logout';
                     }}
                   >
                     <Ic d="M6.5 2.5 L3.5 2.5 L3.5 13.5 L6.5 13.5 M10.5 5 L13.5 8 L10.5 11 M13 8 L6.5 8" />

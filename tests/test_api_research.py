@@ -5,6 +5,7 @@ FakeConnection, and every test asserts parameterized SQL (user values appear
 in params, never interpolated into the SQL text).
 """
 
+import base64
 import json
 from datetime import date
 
@@ -42,6 +43,12 @@ def script_docket_resolution(conn: FakeConnection, canonical: str = "CON-1234567
         rows=[(canonical,)],
         columns=["docket_id"],
     )
+
+
+def principal_headers(payload: dict) -> dict[str, str]:
+    """A forged x-ms-client-principal header, as SWA/Entra would send it."""
+    encoded = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
+    return {"x-ms-client-principal": encoded}
 
 
 # ---------------------------------------------------------------------------
@@ -827,3 +834,123 @@ def test_wiki_review_unknown_revision_404(client, fake_conn):
         client.post("/wiki/con-overview/revisions/99/review", json={"action": "approve"})
         .status_code == 404
     )
+
+
+# ---------------------------------------------------------------------------
+# /me
+# ---------------------------------------------------------------------------
+
+
+def test_me_requires_auth(client):
+    response = client.get("/me")
+    assert response.status_code == 401
+    assert "x-ms-client-principal" in response.json()["detail"]
+
+
+def test_me_with_forged_header_returns_profile_and_inserts_app_user(client, fake_conn):
+    headers = principal_headers(
+        {
+            "identityProvider": "aad",
+            "userId": "swa-user-1",
+            "userDetails": "matt@custerfucks.com",
+            "userRoles": ["authenticated"],
+            "claims": [
+                {
+                    "typ": "http://schemas.microsoft.com/identity/claims/objectidentifier",
+                    "val": "oid-111",
+                }
+            ],
+        }
+    )
+    response = client.get("/me", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body == {
+        "id": "oid-111",
+        "upn": "matt@custerfucks.com",
+        "email": "matt@custerfucks.com",
+        "name": "matt@custerfucks.com",
+        "provider": "aad",
+        "roles": ["authenticated"],
+    }
+
+    select_calls = executed_with(fake_conn, "SELECT user_id FROM con.app_user")
+    assert select_calls and select_calls[0][1] == ("oid-111",)
+    insert_calls = executed_with(fake_conn, "INSERT INTO con.app_user")
+    assert insert_calls
+    assert insert_calls[0][1] == (
+        "oid-111",
+        "matt@custerfucks.com",
+        "matt@custerfucks.com",
+        "matt@custerfucks.com",
+        "aad",
+    )
+    assert not executed_with(fake_conn, "UPDATE con.app_user")
+    assert fake_conn.committed == 1
+
+
+def test_me_updates_existing_app_user_row(client, fake_conn):
+    fake_conn.script(
+        "SELECT user_id FROM con.app_user", rows=[("oid-222",)], columns=["user_id"]
+    )
+    headers = principal_headers({"userId": "oid-222", "userDetails": "someone@example.com"})
+    response = client.get("/me", headers=headers)
+    assert response.status_code == 200
+    update_calls = executed_with(fake_conn, "UPDATE con.app_user SET upn")
+    assert update_calls and update_calls[0][1][-1] == "oid-222"
+    assert not executed_with(fake_conn, "INSERT INTO con.app_user")
+    assert fake_conn.committed == 1
+
+
+# ---------------------------------------------------------------------------
+# Server-authoritative ownership (/projects, /alerts)
+# ---------------------------------------------------------------------------
+
+
+def test_project_create_owner_stamped_from_principal_overrides_body(client, fake_conn):
+    headers = principal_headers({"userId": "oid-333", "userDetails": "alice@example.com"})
+    response = client.post(
+        "/projects",
+        json={"name": "Owner Stamp Project", "owner": "client-supplied@example.com"},
+        headers=headers,
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["owner"] == "alice@example.com"
+
+    sql, params = executed_with(fake_conn, "INSERT INTO con.research_project")[0]
+    assert "alice@example.com" in params
+    assert "client-supplied@example.com" not in params
+
+
+def test_project_create_without_headers_honors_body_owner(client, fake_conn):
+    response = client.post(
+        "/projects", json={"name": "Unauthenticated Project", "owner": "bob@example.com"}
+    )
+    assert response.status_code == 201
+    assert response.json()["owner"] == "bob@example.com"
+
+    sql, params = executed_with(fake_conn, "INSERT INTO con.research_project")[0]
+    assert "bob@example.com" in params
+
+
+def test_alert_create_owner_stamped_from_principal_overrides_body(client, fake_conn):
+    headers = principal_headers({"userId": "oid-444", "userDetails": "carol@example.com"})
+    response = client.post(
+        "/alerts",
+        json={
+            "name": "Owner Stamp Alert",
+            "query": {"q": "NICU"},
+            "scope": "matters",
+            "frequency": "weekly",
+            "owner": "client-supplied@example.com",
+        },
+        headers=headers,
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["owner"] == "carol@example.com"
+
+    sql, params = executed_with(fake_conn, "INSERT INTO con.saved_alert")[0]
+    assert "carol@example.com" in params
+    assert "client-supplied@example.com" not in params
