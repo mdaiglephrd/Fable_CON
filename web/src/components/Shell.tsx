@@ -434,7 +434,7 @@ export function Shell() {
                     className="user-menu-item danger"
                     onClick={() => {
                       setUserMenuOpen(false);
-                      window.location.href = '/.auth/logout';
+                      window.location.href = '/.auth/logout?post_logout_redirect_uri=/login';
                     }}
                   >
                     <Ic d="M6.5 2.5 L3.5 2.5 L3.5 13.5 L6.5 13.5 M10.5 5 L13.5 8 L10.5 11 M13 8 L6.5 8" />

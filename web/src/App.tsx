@@ -38,6 +38,7 @@ const MatterHistory = lazy(() => import('./views/MatterHistory'));
 const Tools = lazy(() => import('./views/Tools'));
 const Upload = lazy(() => import('./views/Upload'));
 const Reports = lazy(() => import('./views/Reports'));
+const Login = lazy(() => import('./views/Login'));
 
 function Loading() {
   return (
@@ -48,6 +49,14 @@ function Loading() {
 export default function App() {
   return (
     <Routes>
+      <Route
+        path="/login"
+        element={
+          <Suspense fallback={<Loading />}>
+            <Login />
+          </Suspense>
+        }
+      />
       <Route element={<Shell />}>
         <Route
           index
