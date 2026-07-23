@@ -38,6 +38,7 @@ const MatterHistory = lazy(() => import('./views/MatterHistory'));
 const Tools = lazy(() => import('./views/Tools'));
 const Upload = lazy(() => import('./views/Upload'));
 const Reports = lazy(() => import('./views/Reports'));
+const Settings = lazy(() => import('./views/Settings'));
 const Login = lazy(() => import('./views/Login'));
 
 function Loading() {
@@ -98,6 +99,7 @@ export default function App() {
             ['/tools', <Tools />],
             ['/upload', <Upload />],
             ['/reports', <Reports />],
+            ['/settings', <Settings />],
           ] as [string, JSX.Element][]
         ).map(([path, element]) => (
           <Route key={path} path={path} element={<Suspense fallback={<Loading />}>{element}</Suspense>} />

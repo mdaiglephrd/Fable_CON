@@ -14,9 +14,9 @@ import {
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { SCOPE_DEFS } from '../lib/fixtures';
+import { readDefaultScope } from '../lib/searchPrefs';
 import { useTheme } from '../lib/theme';
 import { useUser } from '../lib/useUser';
-import { useToast } from './Toast';
 
 // ---------------------------------------------------------------------------
 // Inline stroke icons (13–16px, currentColor) — paths from the comp
@@ -196,6 +196,10 @@ function navIdsForPath(pathname: string): { parent: string; child: string | null
     reports: ['tools', 'reports'],
     upload: ['upload', null],
     submit: ['upload', 'submit'],
+    // Settings is user-menu-only (not in NAV_GROUPS) — map to no group so it
+    // doesn't fall through to the ['home', null] default and falsely
+    // highlight Home in the left rail.
+    settings: ['', null],
   };
   if (first === 'search') return { parent: 'research', child: 'newsearch' };
   if (first === 'projects') {
@@ -228,14 +232,13 @@ export function Shell() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { theme, toggleTheme } = useTheme();
-  const { showToast } = useToast();
-  const { user, loading: userLoading } = useUser();
-  const userName = user?.name ?? (userLoading ? '…' : 'Signed out');
-  const userSubtitle = userLoading ? '' : (user?.email ?? '');
+  const { user, loading: userLoading, error: userError, refresh: refreshUser } = useUser();
+  const userName = user?.name ?? (userLoading ? '…' : userError ? 'Unable to verify sign-in' : 'Signed out');
+  const userSubtitle = userLoading ? '' : userError ? 'Click to retry' : (user?.email ?? '');
   const userInitials = userLoading ? '' : (user?.initials ?? '');
 
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState('all');
+  const [scope, setScope] = useState(readDefaultScope);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [expandedNav, setExpandedNav] = useState<Record<string, boolean>>({});
   const mainRef = useRef<HTMLElement>(null);
@@ -350,7 +353,14 @@ export function Shell() {
           </button>
           <div style={{ position: 'relative', alignSelf: 'stretch' }}>
             <button
-              onClick={() => setUserMenuOpen((v) => !v)}
+              onClick={() => {
+                if (userError) {
+                  refreshUser();
+                  return;
+                }
+                setUserMenuOpen((v) => !v);
+              }}
+              title={userError ? 'Unable to verify sign-in — click to retry' : undefined}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -380,7 +390,9 @@ export function Shell() {
                 {userInitials}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, textAlign: 'left' }}>
-                <span style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>{userName}</span>
+                <span style={{ fontSize: 12, color: userError ? 'var(--brand-red)' : 'var(--text)', fontWeight: 500 }}>
+                  {userName}
+                </span>
                 <span style={{ fontSize: 10, color: 'var(--text3)' }}>{userSubtitle}</span>
               </div>
               <svg
@@ -409,19 +421,7 @@ export function Shell() {
                     className="user-menu-item"
                     onClick={() => {
                       setUserMenuOpen(false);
-                      showToast('Personalization — coming in phase 2');
-                    }}
-                  >
-                    <span style={{ color: 'var(--text2)', display: 'inline-flex' }}>
-                      <Ic d="M8 3 A2.5 2.5 0 1 1 7.99 3 M3 14 C3 10.5 5.2 9 8 9 C10.8 9 13 10.5 13 14" />
-                    </span>
-                    Personalization
-                  </button>
-                  <button
-                    className="user-menu-item"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      showToast('Settings — coming in phase 2');
+                      navigate('/settings');
                     }}
                   >
                     <span style={{ color: 'var(--text2)', display: 'inline-flex' }}>

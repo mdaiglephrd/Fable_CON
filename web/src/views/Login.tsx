@@ -44,8 +44,8 @@ export default function Login() {
   // mechanism Shell relies on — otherwise a direct/unauthenticated visit
   // would render with no theme resolved.
   useTheme();
-  const { user, loading } = useUser();
-  const signedIn = !loading && !!user?.name;
+  const { user, loading, error, refresh } = useUser();
+  const signedIn = !loading && !error && !!user?.name;
 
   return (
     <div
@@ -77,7 +77,32 @@ export default function Login() {
           <div style={{ padding: '10px 0', fontSize: 13, color: 'var(--text3)' }}>Checking sign-in status…</div>
         )}
 
-        {!loading && !signedIn && (
+        {!loading && error && (
+          <>
+            <div
+              style={{
+                marginBottom: 16,
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-xs)',
+                background: 'var(--surface2)',
+                fontSize: 12.5,
+                color: 'var(--brand-red)',
+              }}
+            >
+              Couldn&rsquo;t verify sign-in status. This is usually a transient blip.
+            </div>
+            <button
+              type="button"
+              className="btn-outline"
+              style={{ width: '100%', justifyContent: 'center', padding: '10px 18px', fontSize: 13.5 }}
+              onClick={refresh}
+            >
+              Retry
+            </button>
+          </>
+        )}
+
+        {!loading && !error && !signedIn && (
           <a
             href={SIGN_IN_URL}
             className="btn-primary"
