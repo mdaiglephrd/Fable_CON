@@ -22,14 +22,21 @@ import type { StatuteDetail } from '../lib/types';
 
 type Tab = 'statute' | 'rules';
 
+/** Explicit tri-state for GET /statutes/{id} — loading and error must never
+ * be silently rendered as the bundled fixture statute/rule text. */
+type LoadState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ok'; detail: StatuteDetail };
+
 export default function Statute() {
   const { statuteId = '31-6-43' } = useParams();
   const navigate = useNavigate();
 
   const isRule = statuteId.startsWith('rule-');
   const [tab, setTab] = useState<Tab>(isRule ? 'rules' : 'statute');
-  const [live, setLive] = useState<StatuteDetail | null>(null);
-  const [liveError, setLiveError] = useState<string | null>(null);
+  const [liveState, setLiveState] = useState<LoadState>({ status: 'loading' });
+  const [retryTick, setRetryTick] = useState(0);
 
   // Keep the tab in sync when a cross-link jumps between statute and rule.
   useEffect(() => {
@@ -39,23 +46,26 @@ export default function Statute() {
   useEffect(() => {
     if (api.USE_FIXTURES) return;
     let alive = true;
-    setLive(null);
-    setLiveError(null);
+    setLiveState({ status: 'loading' });
     api
       .getStatute(statuteId)
-      .then((s) => alive && setLive(s))
-      .catch((e: Error) => alive && setLiveError(e.message));
+      .then((s) => alive && setLiveState({ status: 'ok', detail: s }))
+      .catch((e: Error) => alive && setLiveState({ status: 'error', message: e.message }));
     return () => {
       alive = false;
     };
-  }, [statuteId]);
+  }, [statuteId, retryTick]);
+
+  const retry = () => setRetryTick((t) => t + 1);
+  const live = liveState.status === 'ok' ? liveState.detail : null;
 
   const statuteContent = useMemo(() => statuteContentFor(isRule ? '31-6-43' : statuteId), [statuteId, isRule]);
   const ruleContent = useMemo(() => ruleContentFor(isRule ? statuteId : 'rule-111-2-2-.40'), [statuteId, isRule]);
 
-  // Live mode fallback: render full_text / subsections best-effort.
+  // Live mode: render full_text / subsections best-effort (only ever used
+  // when api.USE_FIXTURES is false — see liveState above).
   const liveSubs: StatuteSubsection[] | null = useMemo(() => {
-    if (api.USE_FIXTURES || !live) return null;
+    if (!live) return null;
     if (Array.isArray(live.subsections)) {
       return (live.subsections as { num?: string; text?: string }[]).map((s, i) => ({
         num: s.num ?? `(${i + 1})`,
@@ -74,10 +84,17 @@ export default function Statute() {
   const headerNum = isRule
     ? (RULES_TOC.find((r) => r.id === statuteId)?.label ?? statuteId.replace(/^rule-/, ''))
     : (STATUTE_TOC.find((s) => s.id === statuteId)?.num ?? `§ ${statuteId}`);
-  const headerTitle = live?.title ?? (tab === 'rules' ? ruleContent.title.split('— ')[1] ?? ruleContent.title : statuteContent.title);
+  const headerTitle = api.USE_FIXTURES
+    ? (tab === 'rules' ? ruleContent.title.split('— ')[1] ?? ruleContent.title : statuteContent.title)
+    : liveState.status === 'ok'
+      ? (live?.title ?? headerNum)
+      : liveState.status === 'error'
+        ? 'Unavailable'
+        : 'Loading…';
 
   const annotations = useMemo(() => {
-    if (!api.USE_FIXTURES && live?.citingCases?.length) {
+    if (api.USE_FIXTURES) return STATUTE_ANNOTATIONS;
+    if (live?.citingCases?.length) {
       return live.citingCases.map((c) => ({
         subsection: c.pinpoint ?? '',
         label: c.treat ?? 'Citing',
@@ -89,7 +106,7 @@ export default function Statute() {
         caseId: c.target != null ? String(c.target) : null,
       }));
     }
-    return STATUTE_ANNOTATIONS;
+    return [];
   }, [live]);
 
   return (
@@ -115,9 +132,12 @@ export default function Statute() {
             Currency: <strong style={{ color: 'var(--text)' }}>2026 Reg. Sess. · Effective Jul. 1, 2024</strong>
           </span>
         </div>
-        {liveError && (
-          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--status-denied)' }}>
-            Live statute unavailable ({liveError}) — showing the bundled text.
+        {!api.USE_FIXTURES && liveState.status === 'error' && (
+          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--status-denied)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>Statute text unavailable — {liveState.message}</span>
+            <button onClick={retry} className="text-link" style={{ fontWeight: 600 }}>
+              Retry
+            </button>
           </div>
         )}
       </div>
@@ -180,49 +200,86 @@ export default function Statute() {
 
         {/* ===== Text ===== */}
         <article className="serif" style={{ background: 'var(--surface)', padding: '36px 48px 80px', color: 'var(--text)', lineHeight: 1.65 }}>
-          {tab === 'statute' ? (
-            <>
-              <div className="label-upper" style={{ color: 'var(--accent-text)', letterSpacing: 1.6, marginBottom: 8, fontFamily: 'var(--font-ui)' }}>
-                {live?.citationLabel ?? statuteContent.cite}
-              </div>
-              <h2 className="serif" style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
-                {live?.title ?? statuteContent.title}
-              </h2>
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, fontFamily: 'var(--font-ui)' }}>{statuteContent.subtitle}</div>
-              {(liveSubs ?? statuteContent.subs).map((ss, i) => (
-                <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, paddingTop: 4 }}>
-                  <div className="serif" style={{ flexShrink: 0, width: 36, fontWeight: 600, color: 'var(--accent-text)', fontSize: 15, paddingTop: 2 }}>
-                    {ss.num}
-                  </div>
-                  <div style={{ flex: 1, fontSize: 15, lineHeight: 1.7 }}>{renderSegs(ss.segs)}</div>
+          {api.USE_FIXTURES ? (
+            tab === 'statute' ? (
+              <>
+                <div className="label-upper" style={{ color: 'var(--accent-text)', letterSpacing: 1.6, marginBottom: 8, fontFamily: 'var(--font-ui)' }}>
+                  {statuteContent.cite}
                 </div>
-              ))}
-              <div className="card" style={{ marginTop: 32, padding: '14px 16px', background: 'var(--page-bg)', fontFamily: 'var(--font-ui)', fontSize: 12.5, color: 'var(--text2)' }}>
-                <strong style={{ color: 'var(--text)' }}>History:</strong> {statuteContent.history}
-              </div>
-            </>
+                <h2 className="serif" style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                  {statuteContent.title}
+                </h2>
+                <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, fontFamily: 'var(--font-ui)' }}>{statuteContent.subtitle}</div>
+                {statuteContent.subs.map((ss, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, paddingTop: 4 }}>
+                    <div className="serif" style={{ flexShrink: 0, width: 36, fontWeight: 600, color: 'var(--accent-text)', fontSize: 15, paddingTop: 2 }}>
+                      {ss.num}
+                    </div>
+                    <div style={{ flex: 1, fontSize: 15, lineHeight: 1.7 }}>{renderSegs(ss.segs)}</div>
+                  </div>
+                ))}
+                <div className="card" style={{ marginTop: 32, padding: '14px 16px', background: 'var(--page-bg)', fontFamily: 'var(--font-ui)', fontSize: 12.5, color: 'var(--text2)' }}>
+                  <strong style={{ color: 'var(--text)' }}>History:</strong> {statuteContent.history}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="label-upper" style={{ color: 'var(--accent-text)', letterSpacing: 1.6, marginBottom: 8, fontFamily: 'var(--font-ui)' }}>
+                  Ga. Comp. R. &amp; Regs. 111-2-2
+                </div>
+                <h2 className="serif" style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                  {ruleContent.title}
+                </h2>
+                <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, fontFamily: 'var(--font-ui)' }}>
+                  Ga. Comp. R. &amp; Regs. 111-2-2 — Chapter on Certificate of Need
+                </div>
+                {ruleContent.subs.map((rs, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, paddingTop: 4 }}>
+                    <div className="mono" style={{ flexShrink: 0, width: 52, fontWeight: 600, color: 'var(--accent-text)', fontSize: 12, paddingTop: 4 }}>
+                      {rs.num}
+                    </div>
+                    <div style={{ flex: 1, fontSize: 15, lineHeight: 1.7 }}>{renderSegs(rs.segs)}</div>
+                  </div>
+                ))}
+                <div className="card" style={{ marginTop: 32, padding: '14px 16px', background: 'var(--page-bg)', fontFamily: 'var(--font-ui)', fontSize: 12.5, color: 'var(--text2)' }}>
+                  <strong style={{ color: 'var(--text)' }}>Authority:</strong> {ruleContent.authority}
+                </div>
+              </>
+            )
+          ) : liveState.status === 'loading' ? (
+            <div style={{ padding: '40px 0', color: 'var(--text3)', fontSize: 13 }}>Loading statute text…</div>
+          ) : liveState.status === 'error' ? (
+            <div className="card" style={{ padding: '18px 20px' }}>
+              <div style={{ fontSize: 13.5, color: 'var(--text)', marginBottom: 10 }}>Statute text unavailable — {liveState.message}</div>
+              <button className="btn-outline" onClick={retry}>
+                Retry
+              </button>
+            </div>
           ) : (
             <>
               <div className="label-upper" style={{ color: 'var(--accent-text)', letterSpacing: 1.6, marginBottom: 8, fontFamily: 'var(--font-ui)' }}>
-                Ga. Comp. R. &amp; Regs. 111-2-2
+                {live?.citationLabel ?? headerNum}
               </div>
               <h2 className="serif" style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
-                {ruleContent.title}
+                {live?.title ?? '(untitled)'}
               </h2>
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, fontFamily: 'var(--font-ui)' }}>
-                Ga. Comp. R. &amp; Regs. 111-2-2 — Chapter on Certificate of Need
-              </div>
-              {ruleContent.subs.map((rs, i) => (
-                <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, paddingTop: 4 }}>
-                  <div className="mono" style={{ flexShrink: 0, width: 52, fontWeight: 600, color: 'var(--accent-text)', fontSize: 12, paddingTop: 4 }}>
-                    {rs.num}
+              {liveSubs && liveSubs.length > 0 ? (
+                liveSubs.map((ss, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, paddingTop: 4 }}>
+                    <div className="serif" style={{ flexShrink: 0, width: 36, fontWeight: 600, color: 'var(--accent-text)', fontSize: 15, paddingTop: 2 }}>
+                      {ss.num}
+                    </div>
+                    <div style={{ flex: 1, fontSize: 15, lineHeight: 1.7 }}>{renderSegs(ss.segs)}</div>
                   </div>
-                  <div style={{ flex: 1, fontSize: 15, lineHeight: 1.7 }}>{renderSegs(rs.segs)}</div>
+                ))
+              ) : (
+                <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 24 }}>No section text is available for this entry yet.</div>
+              )}
+              {live?.regimeNote && (
+                <div className="card" style={{ marginTop: 32, padding: '14px 16px', background: 'var(--page-bg)', fontFamily: 'var(--font-ui)', fontSize: 12.5, color: 'var(--text2)' }}>
+                  <strong style={{ color: 'var(--text)' }}>Note:</strong> {live.regimeNote}
                 </div>
-              ))}
-              <div className="card" style={{ marginTop: 32, padding: '14px 16px', background: 'var(--page-bg)', fontFamily: 'var(--font-ui)', fontSize: 12.5, color: 'var(--text2)' }}>
-                <strong style={{ color: 'var(--text)' }}>Authority:</strong> {ruleContent.authority}
-              </div>
+              )}
             </>
           )}
         </article>
@@ -235,7 +292,7 @@ export default function Statute() {
             </svg>
             Annotations
             <span style={{ marginLeft: 'auto', fontSize: 10.5, color: 'var(--text2)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
-              412 cases citing
+              {api.USE_FIXTURES ? '412 cases citing' : `${annotations.length} ${annotations.length === 1 ? 'case' : 'cases'} citing`}
             </span>
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

@@ -14,8 +14,17 @@ import { useToast } from '../components/Toast';
 import { DktBadge } from '../components/DktBadge';
 import * as api from '../lib/api';
 import { FACET_DEFS, fixtureSearch, SCOPE_DEFS } from '../lib/fixtures';
+import { recordRecentSearch } from '../lib/recentSearches';
 import { renderSegs } from '../lib/segments';
 import type { ResultCard } from '../lib/types';
+
+/** Explicit tri-state for the live /search fetch — never conflate "loading"
+ * or "errored" with "no live data", which used to silently fall back to
+ * bundled fixture content in production. */
+type LiveSearchState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ok'; cards: ResultCard[] };
 
 const SORT_LABELS: Record<string, string> = {
   relevance: 'Relevance',
@@ -84,29 +93,41 @@ export default function Results() {
   const [snippetView, setSnippetView] = useState(false);
   const [sortBy, setSortBy] = useState('relevance');
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [liveCards, setLiveCards] = useState<ResultCard[] | null>(null);
-  const [liveError, setLiveError] = useState<string | null>(null);
+  const [liveState, setLiveState] = useState<LiveSearchState>({ status: 'loading' });
+  const [retryTick, setRetryTick] = useState(0);
   const sortRef = useRef<HTMLDivElement>(null);
 
-  // Live-API search (fixture mode computes synchronously below).
+  // Live-API search (fixture mode computes synchronously below). USE_FIXTURES
+  // is the only reason to skip the live fetch — never treat "still loading"
+  // or "the fetch failed" as "show fixtures instead".
   useEffect(() => {
     if (api.USE_FIXTURES) return;
     let alive = true;
+    setLiveState({ status: 'loading' });
     api
       .search(q || '*', scope === 'all' ? 'all' : 'matters')
-      .then((res) => alive && setLiveCards(liveHitsToCards(res.hits)))
-      .catch((err: Error) => alive && setLiveError(err.message));
+      .then((res) => alive && setLiveState({ status: 'ok', cards: liveHitsToCards(res.hits) }))
+      .catch((err: Error) => alive && setLiveState({ status: 'error', message: err.message }));
     return () => {
       alive = false;
     };
+  }, [q, scope, retryTick]);
+
+  // Record every query the user actually runs (genuine client-side search
+  // history — see lib/recentSearches.ts), regardless of fixtures/live mode.
+  useEffect(() => {
+    if (q.trim()) recordRecentSearch(q, scope);
   }, [q, scope]);
 
+  const retryLiveSearch = () => setRetryTick((t) => t + 1);
+
   const { cards, queryDisplay } = useMemo(() => {
-    if (!api.USE_FIXTURES && liveCards) {
-      return { cards: liveCards, queryDisplay: q || 'All CON Sources' };
+    if (api.USE_FIXTURES) return fixtureSearch(q, scope, facetSel);
+    if (liveState.status === 'ok') {
+      return { cards: liveState.cards, queryDisplay: q || 'All CON Sources' };
     }
-    return fixtureSearch(q, scope, facetSel);
-  }, [q, scope, facetSel, liveCards]);
+    return { cards: [] as ResultCard[], queryDisplay: q || 'All CON Sources' };
+  }, [q, scope, facetSel, liveState]);
 
   const sorted = useMemo(() => {
     const list = [...cards];
@@ -146,8 +167,14 @@ export default function Results() {
             </h1>
             <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
               <span>
-                <strong style={{ color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{sorted.length}</strong>{' '}
-                {sorted.length === 1 ? 'document' : 'documents'}
+                {!api.USE_FIXTURES && liveState.status === 'loading' ? (
+                  <em style={{ color: 'var(--text3)' }}>searching…</em>
+                ) : (
+                  <>
+                    <strong style={{ color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{sorted.length}</strong>{' '}
+                    {sorted.length === 1 ? 'document' : 'documents'}
+                  </>
+                )}
               </span>
               <span style={{ color: 'var(--border2)' }}>|</span>
               <span>
@@ -315,9 +342,12 @@ export default function Results() {
             <span style={{ fontSize: 12, color: 'var(--text3)' }}>None applied</span>
           )}
         </div>
-        {liveError && (
-          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--status-denied)' }}>
-            Live search unavailable ({liveError}) — check VITE_API_BASE.
+        {!api.USE_FIXTURES && liveState.status === 'error' && (
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--status-denied)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>Search failed: {liveState.message}</span>
+            <button onClick={retryLiveSearch} className="text-link" style={{ fontWeight: 600 }}>
+              Retry
+            </button>
           </div>
         )}
       </div>
@@ -355,7 +385,35 @@ export default function Results() {
 
         {/* Result list */}
         <div style={{ flex: 1, minWidth: 0, padding: '8px 32px 40px' }}>
-          {sorted.map((c) => (
+          {!api.USE_FIXTURES && liveState.status === 'loading' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }} aria-busy="true" aria-label="Loading results">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="card"
+                  style={{ padding: '18px 22px 20px', opacity: 0.6 }}
+                >
+                  <div style={{ height: 12, width: '40%', background: 'var(--surface2)', borderRadius: 2, marginBottom: 10 }} />
+                  <div style={{ height: 16, width: '70%', background: 'var(--surface2)', borderRadius: 2, marginBottom: 10 }} />
+                  <div style={{ height: 12, width: '90%', background: 'var(--surface2)', borderRadius: 2 }} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!api.USE_FIXTURES && liveState.status === 'error' && (
+            <div className="card" style={{ textAlign: 'center', padding: '60px 20px', marginTop: 14 }}>
+              <div className="serif" style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+                Search failed
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18 }}>{liveState.message}</div>
+              <button className="btn-primary" onClick={retryLiveSearch}>
+                Retry search
+              </button>
+            </div>
+          )}
+
+          {(api.USE_FIXTURES || liveState.status === 'ok') && sorted.map((c) => (
             <article
               key={c.rank}
               className="result-card"
@@ -515,13 +573,15 @@ export default function Results() {
           ))}
 
           {/* Empty state */}
-          {sorted.length === 0 && (
+          {(api.USE_FIXTURES || liveState.status === 'ok') && sorted.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '60px 20px', marginTop: 14 }}>
               <div className="serif" style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
-                No results match your filters
+                {activeFilters.length > 0 ? 'No results match your filters' : 'No results found'}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18 }}>
-                Try removing a filter or broadening your search terms.
+                {activeFilters.length > 0
+                  ? 'Try removing a filter or broadening your search terms.'
+                  : 'Try broadening your search terms, or check back as the database continues to be populated.'}
               </div>
               <button
                 className="btn-primary"
@@ -536,7 +596,7 @@ export default function Results() {
           )}
 
           {/* Pagination */}
-          {sorted.length > 0 && (
+          {(api.USE_FIXTURES || liveState.status === 'ok') && sorted.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, margin: '32px 0 16px', fontSize: 12 }}>
               <button style={{ padding: '6px 10px', color: 'var(--text3)' }} disabled>
                 ‹ Prev
