@@ -25,7 +25,7 @@ def _alert_json(row: dict[str, Any]) -> dict[str, Any]:
     active = row.get("active")
     return drop_none(
         {
-            "id": row.get("alert_id"),
+            "alertId": row.get("alert_id"),
             "owner": row.get("owner_upn"),
             "name": row.get("name"),
             "query": row.get("query_json"),
@@ -84,7 +84,7 @@ def create_alert(
     conn.commit()
     return drop_none(
         {
-            "id": alert_id,
+            "alertId": alert_id,
             "owner": owner,
             "name": alert.name,
             "query": alert.query,

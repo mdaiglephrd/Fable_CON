@@ -25,14 +25,22 @@ const KIND_TABS: { id: Kind; label: string }[] = [
   { id: 'RULE', label: 'DCH Rules' },
 ];
 
+/** Explicit tri-state for GET /statutes — loading and error must never be
+ * silently rendered as the bundled STATUTE_TOC/RULE_LIST fixture index. */
+type LoadState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ok'; ocga: IndexEntry[]; rules: IndexEntry[] };
+
 export default function StatutesIndex() {
   const [kind, setKind] = useState<Kind>('all');
-  const [liveOcga, setLiveOcga] = useState<IndexEntry[] | null>(null);
-  const [liveRules, setLiveRules] = useState<IndexEntry[] | null>(null);
+  const [liveState, setLiveState] = useState<LoadState>({ status: 'loading' });
+  const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
     if (api.USE_FIXTURES) return;
     let alive = true;
+    setLiveState({ status: 'loading' });
     api
       .getStatutes()
       .then((res) => {
@@ -42,21 +50,32 @@ export default function StatutesIndex() {
           num: s.citationLabel ?? s.statuteId,
           title: s.title ?? '',
         });
-        setLiveOcga(res.items.filter((s) => s.kind === 'OCGA').map(toEntry));
-        setLiveRules(res.items.filter((s) => s.kind !== 'OCGA').map(toEntry));
+        setLiveState({
+          status: 'ok',
+          ocga: res.items.filter((s) => s.kind === 'OCGA').map(toEntry),
+          rules: res.items.filter((s) => s.kind !== 'OCGA').map(toEntry),
+        });
       })
-      .catch(() => {
-        /* fall back to the bundled index */
+      .catch((err: Error) => {
+        if (alive) setLiveState({ status: 'error', message: err.message });
       });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [retryTick]);
 
-  const ocga: IndexEntry[] =
-    (!api.USE_FIXTURES && liveOcga) || STATUTE_TOC.map((s) => ({ id: s.id, num: s.num, title: s.title }));
-  const rules: IndexEntry[] =
-    (!api.USE_FIXTURES && liveRules) || RULE_LIST.map((r) => ({ id: r.id, num: r.num, title: r.title }));
+  const retry = () => setRetryTick((t) => t + 1);
+
+  const ocga: IndexEntry[] = api.USE_FIXTURES
+    ? STATUTE_TOC.map((s) => ({ id: s.id, num: s.num, title: s.title }))
+    : liveState.status === 'ok'
+      ? liveState.ocga
+      : [];
+  const rules: IndexEntry[] = api.USE_FIXTURES
+    ? RULE_LIST.map((r) => ({ id: r.id, num: r.num, title: r.title }))
+    : liveState.status === 'ok'
+      ? liveState.rules
+      : [];
 
   const showOcga = kind !== 'RULE';
   const showRules = kind !== 'OCGA';
@@ -95,6 +114,20 @@ export default function StatutesIndex() {
       </PageHeader>
 
       <div style={{ padding: '28px 32px 60px' }}>
+        {!api.USE_FIXTURES && liveState.status === 'loading' && (
+          <div style={{ maxWidth: 1120, fontSize: 13, color: 'var(--text3)', padding: '20px 0' }}>Loading statutes &amp; rules…</div>
+        )}
+        {!api.USE_FIXTURES && liveState.status === 'error' && (
+          <div className="card" style={{ maxWidth: 1120, padding: '18px 20px', marginBottom: 20 }}>
+            <div style={{ fontSize: 13.5, color: 'var(--text)', marginBottom: 10 }}>
+              Statutes &amp; rules unavailable — {liveState.message}
+            </div>
+            <button className="btn-outline" onClick={retry}>
+              Retry
+            </button>
+          </div>
+        )}
+        {(api.USE_FIXTURES || liveState.status === 'ok') && (
         <div
           style={{
             maxWidth: 1120,
@@ -130,6 +163,7 @@ export default function StatutesIndex() {
             </div>
           )}
         </div>
+        )}
       </div>
     </section>
   );

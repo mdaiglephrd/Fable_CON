@@ -4,12 +4,16 @@
  * and the recent / saved searches columns. From the comp's
  * <!-- RESEARCH LANDING --> section.
  */
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Breadcrumb } from '../components/Breadcrumb';
 import { SectionHead } from '../components/Shell';
 import { useToast } from '../components/Toast';
+import * as api from '../lib/api';
+import { SCOPE_DEFS } from '../lib/fixtures';
+import { getRecentSearches, timeAgo, type RecentSearchEntry } from '../lib/recentSearches';
+import type { SavedAlert } from '../lib/types';
 
 const CARDS = [
   {
@@ -56,25 +60,46 @@ const CARDS = [
   },
 ];
 
-const RECENT_SEARCHES = [
-  { q: '"substantial evidence" need methodology', scope: 'All CON Sources', count: '34 results' },
-  { q: 'Rule 111-2-2-.40 MRI', scope: 'Rules & Statutes', count: '12 results' },
-  { q: 'standing competing applicant', scope: 'Determinations', count: '28 results' },
-  { q: 'O.C.G.A. 31-6-44(c)', scope: 'All CON Sources', count: '9 results' },
-];
-
-const SAVED_SEARCHES = [
-  { name: 'MRI need — Bartow PSA watch', q: 'MRI need Bartow' },
-  { name: 'Cardiac cath denials 2024–2026', q: 'cardiac catheterization denied' },
-  { name: 'ASC nonreviewability letters', q: 'docket-type:LNR-ASC' },
-];
+/** Explicit tri-state for GET /alerts — loading and error must never be
+ * silently rendered as fabricated saved-search entries. */
+type AlertsState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ok'; alerts: SavedAlert[] };
 
 export default function Research() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [query, setQuery] = useState('');
 
-  const run = (q: string) => navigate(`/results?q=${encodeURIComponent(q)}&scope=all`);
+  // Recent searches: no backend concept exists for this (there is no
+  // /recent-searches endpoint) — it's derived from genuine queries the user
+  // has actually run, recorded client-side by Results.tsx. See
+  // lib/recentSearches.ts. This is a real (if minimal) history mechanism,
+  // not fabricated demo data.
+  const [recentSearches, setRecentSearches] = useState<RecentSearchEntry[]>([]);
+  useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
+
+  // Saved searches: GET /alerts (api.listAlerts) already gates fixture vs
+  // live internally — fixture-mode calls return the bundled sample alerts,
+  // live mode hits the real API. We only need loading/error/ok here so a
+  // slow or failing fetch never gets confused with "no saved searches".
+  const [alertsState, setAlertsState] = useState<AlertsState>({ status: 'loading' });
+  useEffect(() => {
+    let alive = true;
+    setAlertsState({ status: 'loading' });
+    api
+      .listAlerts()
+      .then((res) => alive && setAlertsState({ status: 'ok', alerts: res.items }))
+      .catch((err: Error) => alive && setAlertsState({ status: 'error', message: err.message }));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const run = (q: string, scope = 'all') => navigate(`/results?q=${encodeURIComponent(q)}&scope=${encodeURIComponent(scope)}`);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     run(query);
@@ -139,44 +164,70 @@ export default function Research() {
             <div>
               <SectionHead title="Recent searches" right={<Link to="/history" className="text-link">Docket history →</Link>} />
               <div className="list-card" style={{ overflow: 'hidden' }}>
-                {RECENT_SEARCHES.map((s) => (
-                  <button key={s.q} className="list-row row-hover" onClick={() => run(s.q)} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '12px 16px' }}>
-                    <svg width="13" height="13" viewBox="0 0 16 16" style={{ flexShrink: 0, color: 'var(--text3)' }} aria-hidden>
-                      <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth={1.6} fill="none" />
-                      <path d="M11 11 L14 14" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
-                    </svg>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13.5, color: 'var(--text)', fontWeight: 500, lineHeight: 1.3 }}>{s.q}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{s.scope}</div>
-                    </div>
-                    <span style={{ flexShrink: 0, fontSize: 11, color: 'var(--text2)' }}>{s.count}</span>
-                  </button>
-                ))}
+                {recentSearches.length === 0 ? (
+                  <div style={{ padding: '18px 16px', fontSize: 12.5, color: 'var(--text3)' }}>No recent searches yet.</div>
+                ) : (
+                  recentSearches.map((s) => (
+                    <button
+                      key={`${s.q}|${s.scope}|${s.at}`}
+                      className="list-row row-hover"
+                      onClick={() => run(s.q, s.scope)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '12px 16px' }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 16 16" style={{ flexShrink: 0, color: 'var(--text3)' }} aria-hidden>
+                        <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth={1.6} fill="none" />
+                        <path d="M11 11 L14 14" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+                      </svg>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13.5, color: 'var(--text)', fontWeight: 500, lineHeight: 1.3 }}>{s.q}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{(SCOPE_DEFS[s.scope] ?? SCOPE_DEFS.all).label}</div>
+                      </div>
+                      <span style={{ flexShrink: 0, fontSize: 11, color: 'var(--text2)' }}>{timeAgo(s.at)}</span>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
             <div>
               <SectionHead title="Saved searches" />
               <div className="list-card" style={{ overflow: 'hidden' }}>
-                {SAVED_SEARCHES.map((s) => (
-                  <div key={s.name} className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '12px 16px' }}>
-                    <button onClick={() => run(s.q)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 11, textAlign: 'left' }}>
-                      <svg width="13" height="13" viewBox="0 0 16 16" style={{ flexShrink: 0, color: 'var(--accent-text)' }} aria-hidden>
-                        <path d="M4 3 L12 3 L12 13 L8 10 L4 13 Z" stroke="currentColor" strokeWidth={1.4} fill="none" strokeLinejoin="round" />
-                      </svg>
-                      <span>
-                        <span style={{ display: 'block', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{s.name}</span>
-                        <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text3)', marginTop: 1 }}>{s.q}</span>
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => showToast(`Search alert active for "${s.name}"`)}
-                      className="btn-outline"
-                      style={{ padding: '4px 9px', fontSize: 10.5 }}
-                    >
-                      Alerting
-                    </button>
+                {alertsState.status === 'loading' && (
+                  <div style={{ padding: '18px 16px', fontSize: 12.5, color: 'var(--text3)' }}>Loading saved searches…</div>
+                )}
+                {alertsState.status === 'error' && (
+                  <div style={{ padding: '18px 16px', fontSize: 12.5, color: 'var(--status-denied)' }}>
+                    Saved searches unavailable — {alertsState.message}
                   </div>
-                ))}
+                )}
+                {alertsState.status === 'ok' && alertsState.alerts.length === 0 && (
+                  <div style={{ padding: '18px 16px', fontSize: 12.5, color: 'var(--text3)' }}>No saved searches yet.</div>
+                )}
+                {alertsState.status === 'ok' &&
+                  alertsState.alerts.map((s) => (
+                    <div key={s.alertId} className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '12px 16px' }}>
+                      <button
+                        onClick={() => run(typeof s.query === 'string' ? s.query : (s.name ?? ''))}
+                        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 11, textAlign: 'left' }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 16 16" style={{ flexShrink: 0, color: 'var(--accent-text)' }} aria-hidden>
+                          <path d="M4 3 L12 3 L12 13 L8 10 L4 13 Z" stroke="currentColor" strokeWidth={1.4} fill="none" strokeLinejoin="round" />
+                        </svg>
+                        <span>
+                          <span style={{ display: 'block', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{s.name ?? s.alertId}</span>
+                          {s.description && (
+                            <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text3)', marginTop: 1 }}>{s.description}</span>
+                          )}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => showToast(`Search alert active for "${s.name ?? s.alertId}"`)}
+                        className="btn-outline"
+                        style={{ padding: '4px 9px', fontSize: 10.5 }}
+                      >
+                        {s.active === false ? 'Off' : 'Alerting'}
+                      </button>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>

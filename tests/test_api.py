@@ -161,6 +161,20 @@ def test_matters_q_uses_containstable_when_fulltext_enabled(client, fake_conn, m
     assert '"hospice*"' in params
 
 
+def test_matters_whitespace_q_skips_containstable(client, fake_conn, monkeypatch):
+    # A whitespace-only q has no terms; _fts_query would otherwise reduce it to
+    # an empty '""' CONTAINSTABLE phrase, which SQL Server rejects as a syntax
+    # error rather than returning zero rows. Must not reach CONTAINSTABLE.
+    monkeypatch.setenv("FULLTEXT_ENABLED", "true")
+    fake_conn.script("COUNT(*)", rows=[(0,)])
+    fake_conn.script("SELECT m.*", rows=[], columns=MATTER_COLUMNS)
+
+    response = client.get("/matters", params={"q": "   "})
+    assert response.status_code == 200
+    sql, _ = executed_with(fake_conn, "SELECT m.*")[0]
+    assert "CONTAINSTABLE" not in sql
+
+
 def test_matters_rejects_unknown_sort_column(client, fake_conn):
     response = client.get("/matters", params={"sort": "docket_id; DROP TABLE con.matter"})
     assert response.status_code == 400
@@ -300,6 +314,17 @@ def test_documents_extended_metadata_filters(client, fake_conn):
     assert 10 in params
 
 
+def test_documents_whitespace_q_skips_containstable(client, fake_conn, monkeypatch):
+    monkeypatch.setenv("FULLTEXT_ENABLED", "true")
+    fake_conn.script("COUNT(*)", rows=[(0,)])
+    fake_conn.script("SELECT d.*", rows=[], columns=["entry_id"])
+
+    response = client.get("/documents", params={"q": "  "})
+    assert response.status_code == 200
+    sql, _ = executed_with(fake_conn, "SELECT d.*")[0]
+    assert "CONTAINSTABLE" not in sql
+
+
 def test_matters_decision_date_and_completeness_filters(client, fake_conn):
     fake_conn.script("COUNT(*)", rows=[(0,)])
     fake_conn.script("SELECT m.*", rows=[], columns=MATTER_COLUMNS)
@@ -395,6 +420,47 @@ def test_watchlist_get_defaults_to_active_only(client, fake_conn):
 
 
 # ---------------------------------------------------------------------------
+# /reports/events
+# ---------------------------------------------------------------------------
+
+
+def test_report_events_shaped_camelcase(client, fake_conn):
+    # web/src/views/Reports.tsx reads e.docketId / e.sectionHeading / e.reportDate /
+    # e.description directly off the live response with no snake_case fallback
+    # (unlike Results.tsx / Applications.tsx, which defensively check both forms
+    # for /search and /matters) -- the row must already be camelCase.
+    fake_conn.script("COUNT(*)", rows=[(1,)])
+    fake_conn.script(
+        "SELECT e.* FROM con.weekly_report_event e",
+        rows=[(
+            88, "2026-06-26", "wr-2026-06-26.pdf", "NEW_APPLICATION",
+            "New CON Applications Filed", "CON-7654321", "CON 7654321",
+            "Wellstar Health System", "Add 12 NICU beds", "Cobb", 12500000,
+            "None", "2026-06-20", None, None,
+        )],
+        columns=[
+            "event_id", "report_date", "report_file", "section", "section_heading",
+            "docket_id", "docket_raw", "applicant", "project_description", "county",
+            "cost", "opposition", "filing_date", "decision_deadline", "decision_date",
+        ],
+    )
+
+    body = client.get("/reports/events").json()
+    assert body["total"] == 1
+    item = body["items"][0]
+    assert item["eventId"] == 88
+    assert item["docketId"] == "CON-7654321"
+    assert item["section"] == "NEW_APPLICATION"
+    assert item["sectionHeading"] == "New CON Applications Filed"
+    assert item["reportDate"] == "2026-06-26"
+    assert item["description"] == "Add 12 NICU beds"
+    assert item["applicant"] == "Wellstar Health System"
+    # No leftover snake_case keys.
+    assert "event_id" not in item and "section_heading" not in item
+    assert "project_description" not in item
+
+
+# ---------------------------------------------------------------------------
 # /search — LIKE fallback
 # ---------------------------------------------------------------------------
 
@@ -425,6 +491,24 @@ def test_search_like_fallback_when_fulltext_disabled(client, fake_conn, monkeypa
 
 def test_search_rejects_unknown_scope(client, fake_conn):
     assert client.get("/search", params={"q": "x", "scope": "everything"}).status_code == 400
+    assert fake_conn.executed == []
+
+
+def test_search_empty_query_returns_no_hits_without_db_access(client, fake_conn, monkeypatch):
+    # An empty/whitespace q has no terms: under CONTAINSTABLE (the default,
+    # FULLTEXT_ENABLED=true) _fts_query reduces it to an empty '""' phrase,
+    # which SQL Server rejects as a syntax error, not zero rows. /search must
+    # short-circuit before ever building that query -- mid-load/empty DB and
+    # a blank query box must both come back as zero hits, not a 500.
+    monkeypatch.setenv("FULLTEXT_ENABLED", "true")
+    response = client.get("/search", params={"q": ""})
+    assert response.status_code == 200
+    assert response.json() == {"query": "", "scope": "all", "fulltext": True, "hits": []}
+    assert fake_conn.executed == []
+
+    response_ws = client.get("/search", params={"q": "   ", "scope": "matters"})
+    assert response_ws.status_code == 200
+    assert response_ws.json()["hits"] == []
     assert fake_conn.executed == []
 
 

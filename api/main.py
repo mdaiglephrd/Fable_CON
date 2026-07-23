@@ -358,7 +358,7 @@ def list_matters(
     count_sql = "SELECT COUNT(*) FROM con.matter m"
     head_params: list[Any] = []
     default_order = "m.docket_id ASC"
-    if q:
+    if q and q.strip():
         if fulltext_enabled():
             join = (
                 f" JOIN CONTAINSTABLE(con.matter, {MATTER_FT_COLUMNS}, ?) ft"
@@ -509,7 +509,7 @@ def list_documents(
     count_sql = "SELECT COUNT(*) FROM con.document d"
     head_params: list[Any] = []
     default_order = "d.entry_id ASC"
-    if q:
+    if q and q.strip():
         if fulltext_enabled():
             join = (
                 f" JOIN CONTAINSTABLE(con.document, {DOCUMENT_FT_COLUMNS}, ?) ft"
@@ -641,6 +641,12 @@ def search(
             detail=f"Unknown scope {scope!r}; one of: {', '.join((*_SEARCH_SCOPES, 'all'))}",
         )
     limit, _ = _clamp_paging(limit, 0)
+    if not q or not q.strip():
+        # An empty/whitespace query has no terms to search on. Under
+        # CONTAINSTABLE (fulltext_enabled()) an empty phrase is a SQL syntax
+        # error, not zero rows, so short-circuit before touching the DB
+        # rather than let every scope's query 500.
+        return {"query": q, "scope": scope, "fulltext": fulltext_enabled(), "hits": []}
     scopes = _SEARCH_SCOPES if scope == "all" else (scope,)
     searchers = {
         "matters": ("matter", _search_matters),
@@ -785,6 +791,33 @@ def deactivate_watchlist(watch_id: int, conn: Any = Depends(get_db)) -> dict[str
 # ---------------------------------------------------------------------------
 
 
+def _report_event_json(row: dict[str, Any]) -> dict[str, Any]:
+    """Map a con.weekly_report_event row to the camelCase shape web/src/lib/types.ts's
+    ReportEvent declares (and web/src/views/Reports.tsx's live path reads directly,
+    with no snake_case fallback, unlike the /search and /matters "raw record" views)."""
+    return {
+        key: value
+        for key, value in {
+            "eventId": row.get("event_id"),
+            "docketId": row.get("docket_id"),
+            "docketRaw": row.get("docket_raw"),
+            "section": row.get("section"),
+            "sectionHeading": row.get("section_heading"),
+            "reportDate": row.get("report_date"),
+            "reportFile": row.get("report_file"),
+            "description": row.get("project_description"),
+            "applicant": row.get("applicant"),
+            "county": row.get("county"),
+            "cost": row.get("cost"),
+            "opposition": row.get("opposition"),
+            "filingDate": row.get("filing_date"),
+            "decisionDeadline": row.get("decision_deadline"),
+            "decisionDate": row.get("decision_date"),
+        }.items()
+        if value is not None
+    }
+
+
 @app.get("/reports/events")
 def report_events(
     docket_id: str | None = None,
@@ -807,7 +840,7 @@ def report_events(
     if since is not None:
         where.append("e.report_date >= ?")
         params.append(since)
-    return _paged(
+    result = _paged(
         conn,
         select_sql="SELECT e.* FROM con.weekly_report_event e",
         count_sql="SELECT COUNT(*) FROM con.weekly_report_event e",
@@ -817,6 +850,8 @@ def report_events(
         limit=limit,
         offset=offset,
     )
+    result["items"] = [_report_event_json(row) for row in result["items"]]
+    return result
 
 
 # ---------------------------------------------------------------------------

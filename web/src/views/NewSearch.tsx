@@ -9,6 +9,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { PageHeader } from '../components/PageHeader';
+import { readDefaultScope } from '../lib/searchPrefs';
 import { DOCKET_FAMILIES } from '../lib/vocab';
 
 const FORUMS = ['DCH Planning', 'OSAH', 'DCH Commissioner', 'Superior Court', 'Ga. Ct. App.', 'Ga. Sup. Ct.'];
@@ -36,7 +37,7 @@ export default function NewSearch() {
       forum && `forum|${forum}`,
       outcome && `outcome|${outcome}`,
     ].filter(Boolean);
-    const params = new URLSearchParams({ q, scope: 'all' });
+    const params = new URLSearchParams({ q, scope: readDefaultScope() });
     if (facets.length) params.set('f', facets.join(','));
     navigate(`/results?${params.toString()}`);
   };

@@ -647,9 +647,10 @@ def test_project_create_slug_id_and_parameterized(client, fake_conn):
     assert body["name"] == "MRI Need Research"
     assert body["status"] == "open"
     assert body["tags"] == ["mri"]
-    # id = slug of the name + short random suffix.
-    assert body["id"].startswith("mri-need-research-")
-    assert len(body["id"]) == len("mri-need-research-") + 6
+    # projectId = slug of the name + short random suffix (matches
+    # web/src/lib/types.ts ResearchProject.projectId, not a bare "id").
+    assert body["projectId"].startswith("mri-need-research-")
+    assert len(body["projectId"]) == len("mri-need-research-") + 6
 
     sql, params = executed_with(fake_conn, "INSERT INTO con.research_project")[0]
     assert "MRI Need Research" not in sql
@@ -657,6 +658,22 @@ def test_project_create_slug_id_and_parameterized(client, fake_conn):
     assert json.dumps(["mri"]) in params
     assert "open" in params
     assert fake_conn.committed == 1
+
+
+def test_projects_list_uses_project_id_key_not_bare_id(client, fake_conn):
+    # web/src/lib/api.ts's listProjects() does `return req('/projects')` with no
+    # field-renaming adapter (unlike getWikiArticle, which explicitly maps
+    # raw.id -> articleId): the wire shape must already match ResearchProject
+    # (projectId), or web/src/views/Library.tsx's `p.projectId` links break.
+    fake_conn.script(
+        "SELECT p.* FROM con.research_project p",
+        rows=[("p1", "owner@example.com", "MRI Need Research", None, None, "open", None)],
+        columns=["project_id", "owner_upn", "name", "description", "tags_json", "status",
+                 "created_at"],
+    )
+    body = client.get("/projects").json()
+    assert body["items"][0]["projectId"] == "p1"
+    assert "id" not in body["items"][0]
 
 
 def test_project_item_requires_a_target(client, fake_conn):
@@ -710,7 +727,8 @@ def test_alert_create_parameterized(client, fake_conn):
     )
     assert response.status_code == 201
     body = response.json()
-    assert body["id"].startswith("mri-watch-")
+    # alertId (matches web/src/lib/types.ts SavedAlert.alertId, not a bare "id").
+    assert body["alertId"].startswith("mri-watch-")
     assert body["active"] is True
     assert body["query"] == {"q": "MRI"}
 
@@ -742,6 +760,10 @@ def test_alerts_list_defaults_to_active_only(client, fake_conn):
     body = client.get("/alerts", params={"owner": "matt@example.com"}).json()
     assert body["total"] == 1
     assert body["items"][0]["query"] == {"q": "MRI"}  # JSON parsed at the boundary
+    # alertId (matches web/src/lib/types.ts SavedAlert.alertId); listAlerts() has
+    # no renaming adapter, so the wire key must already be alertId, not "id".
+    assert body["items"][0]["alertId"] == "mri-watch-abc123"
+    assert "id" not in body["items"][0]
     sql, params = executed_with(fake_conn, "FROM con.saved_alert a")[0]
     assert "a.active = ?" in sql and "a.owner_upn = ?" in sql
     assert "matt@example.com" not in sql and params == (1, "matt@example.com")

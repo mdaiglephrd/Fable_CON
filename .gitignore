@@ -10,3 +10,9 @@ local.settings.json
 dist/
 build/
 .DS_Store
+
+# Local ingest run byproducts (reject reports, transcripts) — not pipeline
+# inputs, see docs/03-ingestion-runbook.md for the real documented ones.
+*rejects*.csv
+log_*.txt
+sizing_test.csv
