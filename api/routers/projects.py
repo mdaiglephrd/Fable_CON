@@ -29,7 +29,7 @@ def _project_json(row: dict[str, Any]) -> dict[str, Any]:
     parse_json_field(row, "tags_json")
     return drop_none(
         {
-            "id": row.get("project_id"),
+            "projectId": row.get("project_id"),
             "owner": row.get("owner_upn"),
             "name": row.get("name"),
             "description": row.get("description"),
@@ -92,7 +92,7 @@ def create_project(
     conn.commit()
     return drop_none(
         {
-            "id": project_id,
+            "projectId": project_id,
             "owner": owner,
             "name": project.name,
             "description": project.description,
